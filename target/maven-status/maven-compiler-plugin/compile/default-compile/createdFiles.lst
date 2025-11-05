@@ -1,4 +1,7 @@
+DataStructures\Queue.class
 com\goats\os_proyect2\Os_Proyect2.class
-DataStructures\LinkedList$LinkedListIterator.class
 DataStructures\LinkedList$Node.class
+DataStructures\Queue$QueueIterator.class
+DataStructures\LinkedList$LinkedListIterator.class
 DataStructures\LinkedList.class
+DataStructures\Queue$Node.class

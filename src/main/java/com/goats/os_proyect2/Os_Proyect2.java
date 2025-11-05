@@ -3,7 +3,7 @@
  */
 
 package com.goats.os_proyect2;
-import DataStructures.LinkedList;
+import DataStructures.*;
 /**
  *
  * @author santi
@@ -11,37 +11,52 @@ import DataStructures.LinkedList;
 public class Os_Proyect2 {
 
     public static void main(String[] args) {
-        LinkedList<String> list = new LinkedList<>();
+        // Create a queue
+        Queue<String> queue = new Queue<>();
         
+        // Basic operations
+        queue.enqueue("Alice");
+        queue.enqueue("Bob");
+        queue.enqueue("Charlie");
         
-        // Easy insertion methods
-        list.add("Apple");        // Add to end
-        list.addFirst("Orange");  // Add to beginning
-        list.addLast("Banana");   // Add to end
-        list.insert(1, "Grape");  // Insert at specific position
+        System.out.println("Queue: " + queue); // [Alice, Bob, Charlie]
+        System.out.println("Size: " + queue.size()); // 3
+        System.out.println("Front: " + queue.peek()); // Alice
         
-        System.out.println("List: " + list); // [Orange, Grape, Apple, Banana]
+        // Dequeue operations
+        System.out.println("Dequeued: " + queue.dequeue()); // Alice
+        System.out.println("Queue after dequeue: " + queue); // [Bob, Charlie]
         
-        // Easy search methods
-        System.out.println("First: " + list.getFirst()); // Orange
-        System.out.println("Last: " + list.getLast());   // Banana
-        System.out.println("At index 2: " + list.get(2)); // Apple
-        System.out.println("Contains 'Apple': " + list.contains("Apple")); // true
-        System.out.println("Position of 'Grape': " + list.find("Grape")); // 1
+        // Search operations
+        System.out.println("Position of 'Eve': " + queue.positionOf("Eve")); // 3
+        System.out.println("Contains 'David': " + queue.contains("David")); // true
         
-        // Easy deletion methods
-        System.out.println("Removed first: " + list.removeFirst()); // Orange
-        System.out.println("Removed last: " + list.removeLast());   // Banana
-        System.out.println("Removed at index 1: " + list.removeAt(1)); // Apple
-        
-        // Iteration with for-each
-        for (String fruit : list) {
-            System.out.println("Fruit: " + fruit);
+        // Iteration
+        System.out.print("Queue elements: ");
+        for (String person : queue) {
+            System.out.print(person + " "); // Bob Charlie David Eve Frank
         }
+        System.out.println();
         
-        // Array-like access
-        list.add("Mango");
-        list.add("Pineapple");
-        System.out.println("Element at index 1: " + list.getAt(1)); // Pineapple
+        // Utility operations
+        Queue<String> copy = queue.copy();
+        System.out.println("Copy: " + copy); // [Bob, Charlie, David, Eve, Frank]
+        
+        
+        queue.reverse();
+        System.out.println("After reverse: " + queue); // [Bob, Frank, Eve, David, Charlie]
+        
+        // Array conversion
+        Object[] array = queue.toArray();
+        System.out.print("Array: ");
+        for (Object obj : array) {
+            System.out.print(obj + " "); // Bob Frank Eve David Charlie
+        }
+        System.out.println();
+        
+        // Clear queue
+        queue.clear();
+        System.out.println("Queue after clear: " + queue); // []
+        System.out.println("Is empty: " + queue.isEmpty()); // true
     }
 }
