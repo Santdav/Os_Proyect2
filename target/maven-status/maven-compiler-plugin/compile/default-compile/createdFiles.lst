@@ -1,7 +1,16 @@
 DataStructures\Queue.class
 com\goats\os_proyect2\Os_Proyect2.class
 DataStructures\LinkedList$Node.class
-DataStructures\Queue$QueueIterator.class
+Testing\FileSystemTest.class
 DataStructures\LinkedList$LinkedListIterator.class
 DataStructures\LinkedList.class
+DataStructures\FileSystemManager.class
+DataStructures\Block.class
 DataStructures\Queue$Node.class
+DataStructures\Permissions.class
+DataStructures\Queue$QueueIterator.class
+DataStructures\File.class
+DataStructures\Directory.class
+DataStructures\StorageDisk.class
+DataStructures\FileSystemManager$FileEntry.class
+DataStructures\FileSystemElement.class

@@ -15,9 +15,9 @@ public class Permissions {
     private boolean isPublic;
     
     public Permissions() {
-        this.canRead = false;
-        this.canWrite = false;
-        this.canExecute = false;
+        this.canRead = true;
+        this.canWrite = true;
+        this.canExecute = true;
         this.isPublic = true;
     }
     

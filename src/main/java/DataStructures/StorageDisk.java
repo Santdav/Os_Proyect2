@@ -79,18 +79,22 @@ public class StorageDisk {
         if (blockNumbers.size() > freeBlocks) {
             return false;
         }
-        
-        // Marcar cada bloque como ocupado
+
+        // VERIFICAR que todos los bloques estén libres ANTES de asignar
         for (int i = 0; i < blockNumbers.size(); i++) {
             int blockNum = blockNumbers.get(i);
             if (blockNum < 0 || blockNum >= totalBlocks || !blocks[blockNum].isFree()) {
-                return false; // Bloque inválido o ya ocupado
+                return false;
             }
-            
+        }
+
+        // AHORA SÍ asignar todos los bloques
+        for (int i = 0; i < blockNumbers.size(); i++) {
+            int blockNum = blockNumbers.get(i);
             blocks[blockNum].setFree(false);
             blocks[blockNum].setOwnerFile(ownerFile);
         }
-        
+
         freeBlocks -= blockNumbers.size();
         return true;
     }

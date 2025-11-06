@@ -67,50 +67,50 @@ public class FileSystemManager {
     
     // ==================== OPERACIONES DE ARCHIVOS ====================
     public boolean createFile(String path, String fileName, int sizeInBlocks) {
-        if (!isAdminMode) return false; // Solo admin puede crear archivos
-        
+        if (!isAdminMode) return false;
+
         Directory parent = findDirectory(path);
         if (parent == null) return false;
-        
+
         if (parent.getChild(fileName) != null) {
-            return false; // Ya existe un elemento con ese nombre
+            return false;
         }
-        
+
         if (!disk.hasEnoughSpace(sizeInBlocks)) {
-            return false; // No hay espacio suficiente
+            return false;
         }
-        
-        // Encontrar bloques libres
+
         LinkedList<Integer> freeBlocks = disk.findFreeBlocks(sizeInBlocks);
         if (freeBlocks.size() < sizeInBlocks) {
-            return false; // No hay bloques consecutivos suficientes
+            return false;
         }
-        
+
+        // CORRECCIÓN: Asignar los bloques al disco ANTES de usarlos
+        if (!disk.allocateBlocks(freeBlocks, fileName)) {
+            return false;
+        }
+
         // Crear el archivo
         File newFile = new File(fileName, currentUser, sizeInBlocks, parent);
-        
-        // Asignar bloques en cadena
+
+        // Asignar bloques en cadena - USAR LOS BLOQUES QUE YA RESERVAMOS
         Block firstBlock = disk.getBlock(freeBlocks.get(0));
-        firstBlock.setFree(false);
-        firstBlock.setOwnerFile(fileName);
-        
         Block currentBlock = firstBlock;
+
         for (int i = 1; i < sizeInBlocks; i++) {
             Block nextBlock = disk.getBlock(freeBlocks.get(i));
-            nextBlock.setFree(false);
-            nextBlock.setOwnerFile(fileName);
             currentBlock.setNextBlock(nextBlock);
             currentBlock = nextBlock;
         }
-        
+
         newFile.setFirstBlock(firstBlock);
         parent.addChild(newFile);
-        
+
         // Actualizar tabla de archivos
         FileEntry entry = new FileEntry(fileName, parent.getPath() + "/" + fileName, 
                                       currentUser, sizeInBlocks, freeBlocks.get(0));
         fileTable.add(entry);
-        
+
         return true;
     }
     
@@ -160,7 +160,10 @@ public class FileSystemManager {
     
     // ==================== OPERACIONES DE DIRECTORIOS ====================
     public boolean createDirectory(String path, String dirName) {
-        if (!isAdminMode) return false;
+        if (!isAdminMode) {
+        System.out.println("DEBUG: Usuario normal no puede crear directorios");
+        return false;
+    }
         
         Directory parent = findDirectory(path);
         if (parent == null) return false;
@@ -214,12 +217,31 @@ public class FileSystemManager {
     
     // ==================== BÚSQUEDA Y NAVEGACIÓN ====================
     public Directory findDirectory(String path) {
-        if (path.equals("/") || path.isEmpty()) {
-            return root;
-        }
-        
-        return (Directory) root.findElement(path);
+    if (path.equals("/") || path.isEmpty() || path.equals("/root")) {
+        return root;
     }
+    
+    // Limpiar el path
+    String cleanPath = path.startsWith("/") ? path.substring(1) : path;
+    if (cleanPath.endsWith("/")) {
+        cleanPath = cleanPath.substring(0, cleanPath.length() - 1);
+    }
+    
+    String[] parts = cleanPath.split("/");
+    Directory current = root;
+    
+    for (String part : parts) {
+        if (part.isEmpty()) continue;
+        
+        FileSystemElement element = current.getChild(part);
+        if (element == null || !element.isDirectory()) {
+            return null;
+        }
+        current = (Directory) element;
+    }
+    
+    return current;
+}
     
     public FileSystemElement findElement(String path) {
         return root.findElement(path);
