@@ -12,9 +12,14 @@ import Testing.FileSystemTest;
 public class Os_Proyect2 {
 
     public static void main(String[] args) {
+        FileSystemTest tester = new FileSystemTest();
+        
+        tester.diagnosticTest(); //Pueba en caso de Modificar cosas en el core de archivos
+        
+        tester.quickTest(); //una version mas ligera
+        
+        tester.runAllTests(); // Prueba COMPLETA con todo y todo
         
         
-        FileSystemTest.mainTest();
-
     }
 }

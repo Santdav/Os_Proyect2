@@ -100,18 +100,45 @@ public class StorageDisk {
     }
     
     public void freeBlock(int blockNumber) {
-        if (blockNumber >= 0 && blockNumber < totalBlocks && !blocks[blockNumber].isFree()) {
-            blocks[blockNumber].clear();
-            freeBlocks++;
+        if (blockNumber < 0 || blockNumber >= totalBlocks) {
+            System.out.println("DEBUG: Intento de liberar bloque inválido: " + blockNumber);
+            return;
         }
+
+        Block block = blocks[blockNumber];
+        if (block.isFree()) {
+            System.out.println("DEBUG: Bloque " + blockNumber + " ya está libre");
+            return;
+        }
+
+        System.out.println("DEBUG: Liberando bloque " + blockNumber + " (era de: " + block.getOwnerFile() + ")");
+        block.clear();
+        freeBlocks++;
+
+        System.out.println("DEBUG: Bloque " + blockNumber + " liberado. Libres: " + freeBlocks);
     }
     
     public void freeBlockChain(Block firstBlock) {
+        if (firstBlock == null) return;
+
+        System.out.println("DEBUG: Iniciando liberación de cadena desde bloque: " + firstBlock.getBlockNumber());
+
         Block current = firstBlock;
+        int bloquesLiberados = 0;
+
         while (current != null) {
+            // GUARDAR la referencia al siguiente bloque ANTES de liberar el actual
+            Block nextBlock = current.getNextBlock();
+
+            System.out.println("DEBUG: Liberando bloque: " + current.getBlockNumber());
             freeBlock(current.getBlockNumber());
-            current = current.getNextBlock();
+            bloquesLiberados++;
+
+            // Avanzar al siguiente bloque (que guardamos antes de liberar)
+            current = nextBlock;
         }
+
+        System.out.println("DEBUG: Total bloques liberados: " + bloquesLiberados);
     }
     
     // ==================== MÉTODOS DE CONSULTA ====================

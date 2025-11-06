@@ -109,12 +109,17 @@ public class Directory extends FileSystemElement {
     
     // Método para buscar recursivamente un archivo o directorio
     public FileSystemElement findElement(String path) {
-        if (path.startsWith("/")) {
-            // Path absoluto - implementar si es necesario
-            return null;
+        if (path == null || path.isEmpty() || path.equals("/")) {
+            return this;
         }
-        
-        String[] parts = path.split("/");
+
+        // Normalizar el path (remover / inicial si existe)
+        String normalizedPath = path.startsWith("/") ? path.substring(1) : path;
+        if (normalizedPath.isEmpty()) {
+            return this;
+        }
+
+        String[] parts = normalizedPath.split("/");
         return findElementRecursive(parts, 0);
     }
     
@@ -122,33 +127,34 @@ public class Directory extends FileSystemElement {
         if (index >= parts.length) {
             return this;
         }
-        
+
         String currentPart = parts[index];
         if (currentPart.isEmpty() || currentPart.equals(".")) {
             return findElementRecursive(parts, index + 1);
         }
-        
+
         if (currentPart.equals("..")) {
             if (parent != null) {
                 return parent.findElementRecursive(parts, index + 1);
             }
             return null;
         }
-        
-        FileSystemElement child = getChild(currentPart);
-        if (child == null) {
-            return null;
+
+        // Buscar en los hijos directos
+        for (int i = 0; i < children.size(); i++) {
+            FileSystemElement child = children.get(i);
+            if (child.getName().equals(currentPart)) {
+                if (index == parts.length - 1) {
+                    return child; // Encontrado el elemento final
+                } else if (child.isDirectory()) {
+                    return ((Directory) child).findElementRecursive(parts, index + 1);
+                } else {
+                    return null; // No es directorio pero hay más partes en el path
+                }
+            }
         }
-        
-        if (index == parts.length - 1) {
-            return child;
-        }
-        
-        if (child.isDirectory()) {
-            return ((Directory) child).findElementRecursive(parts, index + 1);
-        }
-        
-        return null;
+
+        return null; // No encontrado
     }
 
     @Override

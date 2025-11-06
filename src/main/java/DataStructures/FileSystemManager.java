@@ -179,43 +179,54 @@ public class FileSystemManager {
     
     public boolean deleteDirectory(String path, String dirName) {
         if (!isAdminMode) return false;
-        
+
         Directory parent = findDirectory(path);
         if (parent == null) return false;
-        
+
         FileSystemElement element = parent.getChild(dirName);
         if (element == null || !element.isDirectory()) {
             return false;
         }
-        
+
         Directory dir = (Directory) element;
-        
-        // Eliminar recursivamente todos los archivos y subdirectorios
+
+        // PRIMERO: Eliminar recursivamente todo el contenido
         deleteDirectoryRecursive(dir);
-        
-        // Eliminar el directorio mismo
+
+        // LUEGO: Eliminar el directorio mismo del padre
         return parent.removeChild(dir);
     }
     
     private void deleteDirectoryRecursive(Directory dir) {
-        LinkedList<FileSystemElement> children = dir.getChildren();
-        for (int i = 0; i < children.size(); i++) {
-            FileSystemElement child = children.get(i);
+        System.out.println("DEBUG: Eliminando recursivamente directorio: " + dir.getPath());
+
+        // Usar while en lugar de for para evitar problemas de índice
+        while (!dir.getChildren().isEmpty()) {
+            FileSystemElement child = dir.getChildren().get(0); // Siempre tomar el primero
+
             if (child.isDirectory()) {
                 deleteDirectoryRecursive((Directory) child);
             } else {
                 File file = (File) child;
+                System.out.println("DEBUG: Eliminando archivo: " + file.getName() + " con " + file.getSize() + " bloques");
+
                 // Liberar bloques del archivo
                 if (file.getFirstBlock() != null) {
+                    System.out.println("DEBUG: Liberando cadena de bloques para: " + file.getName());
                     disk.freeBlockChain(file.getFirstBlock());
                 }
+
                 // Eliminar de la tabla de archivos
                 removeFromFileTable(file.getPath());
+
+                // Eliminar del directorio
+                dir.removeChild(file);
+                System.out.println("DEBUG: Archivo eliminado: " + file.getName());
             }
         }
+        System.out.println("DEBUG: Directorio vacío: " + dir.getPath());
     }
-    
-    // ==================== BÚSQUEDA Y NAVEGACIÓN ====================
+// ==================== BÚSQUEDA Y NAVEGACIÓN ====================
     public Directory findDirectory(String path) {
     if (path.equals("/") || path.isEmpty() || path.equals("/root")) {
         return root;

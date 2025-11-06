@@ -75,11 +75,11 @@ public class Block {
     }
     
     public void clear() {
-        this.isFree = true;
-        this.nextBlock = null;
-        this.ownerFile = null;
-        clearData();
-    }
+    this.isFree = true;
+    // NO establecer nextBlock = null aquí, porque necesitamos la referencia para liberar la cadena
+    this.ownerFile = null;
+    clearData();
+}
     
     // ==================== MÉTODOS PARA CADENA DE BLOQUES ====================
     public Block getLastBlockInChain() {
