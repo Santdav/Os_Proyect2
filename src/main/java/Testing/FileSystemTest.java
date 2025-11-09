@@ -3,6 +3,9 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package Testing;
+import LogicalStrucures.Directory;
+import LogicalStrucures.File;
+import Managers.FileSystemManager;
 import DataStructures.*;
 /**
  *
@@ -52,7 +55,7 @@ public class FileSystemTest {
         System.out.println("   - Modo inicial: " + (fs.isAdminMode() ? "Admin" : "Usuario"));
         System.out.println("   - Usuario inicial: " + fs.getCurrentUser());
         System.out.println("   - Estado disco: " + fs.getDisk().getDiskStatus());
-        System.out.println("   ✅ Estado inicial correcto\n");
+        System.out.println("   Estado inicial correcto\n");
     }
     
     /**
@@ -86,7 +89,7 @@ public class FileSystemTest {
             System.out.println("   - /documents tiene " + documents.getChildren().size() + " hijos");
         }
         
-        System.out.println("   ✅ Prueba de directorios completada\n");
+        System.out.println("    Prueba de directorios completada\n");
     }
     
     /**
@@ -129,7 +132,7 @@ public class FileSystemTest {
         
         System.out.println("   - Bloques usados en esta prueba: " + bloquesUsados + " (esperado: 10)");
         System.out.println("   - Estado disco: " + fs.getDisk().getDiskStatus());
-        System.out.println("   ✅ Prueba de archivos completada\n");
+        System.out.println("    Prueba de archivos completada\n");
     }
     
     /**
@@ -159,7 +162,7 @@ public class FileSystemTest {
         int bloquesDespues = fs.getDisk().getUsedBlocks();
         System.out.println("   - Bloques usados después: " + bloquesDespues);
         System.out.println("   - Estado disco: " + fs.getDisk().getDiskStatus());
-        System.out.println("   ✅ Prueba de gestión de espacio completada\n");
+        System.out.println("    Prueba de gestión de espacio completada\n");
     }
     
     /**
@@ -193,7 +196,7 @@ public class FileSystemTest {
             System.out.println("   - Lectura 'readme.txt': FALLÓ");
         }
         
-        System.out.println("   ✅ Prueba de lectura completada\n");
+        System.out.println("    Prueba de lectura completada\n");
     }
     
     /**
@@ -225,7 +228,7 @@ public class FileSystemTest {
         
         System.out.println("   - Bloques liberados: " + bloquesLiberados + " (esperado: al menos 5)");
         System.out.println("   - Estado disco después de eliminaciones: " + fs.getDisk().getDiskStatus());
-        System.out.println("   ✅ Prueba de eliminación completada\n");
+        System.out.println("    Prueba de eliminación completada\n");
     }
     
     /**
@@ -260,7 +263,7 @@ public class FileSystemTest {
         
         // Restaurar modo admin
         fs.setCurrentUser("admin", true);
-        System.out.println("   ✅ Prueba de modos de usuario completada\n");
+        System.out.println("    Prueba de modos de usuario completada\n");
     }
     
     /**
@@ -286,7 +289,7 @@ public class FileSystemTest {
         System.out.println("\n   --- ESTRUCTURA COMPLETA DEL SISTEMA ---");
         imprimirEstructuraCompleta(fs.getRoot(), 0);
         
-        System.out.println("   ✅ Prueba de permisos y estructura completada\n");
+        System.out.println("    Prueba de permisos y estructura completada\n");
     }
     
     /**
@@ -295,7 +298,7 @@ public class FileSystemTest {
     private void imprimirEstructuraCompleta(Directory dir, int nivel) {
         String sangria = "   " + "  ".repeat(nivel);
         
-        System.out.println(sangria + "📁 " + dir.getName() + 
+        System.out.println(sangria + " " + dir.getName() + 
                          " (propietario: " + dir.getOwner() + 
                          ", elementos: " + dir.getChildren().size() + ")");
         
@@ -307,7 +310,7 @@ public class FileSystemTest {
                 imprimirEstructuraCompleta((Directory) elemento, nivel + 1);
             } else {
                 File archivo = (File) elemento;
-                System.out.println(sangria + "  📄 " + archivo.getName() +
+                System.out.println(sangria + "  " + archivo.getName() +
                                  " (" + archivo.getSize() + " bloques, " +
                                  "propietario: " + archivo.getOwner() + ")");
             }

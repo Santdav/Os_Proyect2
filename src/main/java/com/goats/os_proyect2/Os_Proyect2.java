@@ -4,7 +4,7 @@
 
 package com.goats.os_proyect2;
 import DataStructures.*;
-import Testing.FileSystemTest;
+import Testing.*;
 /**
  *
  * @author santi
@@ -12,6 +12,8 @@ import Testing.FileSystemTest;
 public class Os_Proyect2 {
 
     public static void main(String[] args) {
+        
+        /* PRUEBAS DE FILE SYSTEM
         FileSystemTest tester = new FileSystemTest();
         
         tester.diagnosticTest(); //Pueba en caso de Modificar cosas en el core de archivos
@@ -19,6 +21,14 @@ public class Os_Proyect2 {
         tester.quickTest(); //una version mas ligera
         
         tester.runAllTests(); // Prueba COMPLETA con todo y todo
+        */
+        
+        
+        //PRUEBAS DE PROCESS
+        ProcessTest.testProcessCreation();
+        ProcessTest.testProcessStates();
+        ProcessTest.testProcessOperations();
+        ProcessTest.testProcessTiming();
         
         
     }

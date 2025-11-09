@@ -4,6 +4,8 @@
  */
 package DataStructures;
 
+import LogicalStrucures.Permissions;
+
 /**
  *
  * @author santi
