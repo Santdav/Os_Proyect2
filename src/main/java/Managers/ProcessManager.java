@@ -5,6 +5,8 @@
 package Managers;
 import DataStructures.Queue;
 import LogicalStrucures.Process;
+import Schedulers.DiskScheduler;
+import Schedulers.FIFOScheduler;
 /**
  *
  * @author santi
@@ -26,17 +28,21 @@ public class ProcessManager {
     private Queue<Process> exitQueue; // Procesos terminados
     
     private int nextProcessId;
+    private DiskScheduler diskScheduler;
     
     // ==================== CONSTRUCTOR ====================
     
     public ProcessManager() {
-        this.newQueue = new Queue<>();
-        this.readyQueue = new Queue<>();
-        this.runningQueue = new Queue<>();
-        this.blockedQueue = new Queue<>();
-        this.exitQueue = new Queue<>();
-        this.nextProcessId = 1;
-    }
+    this.newQueue = new Queue<>();
+    this.readyQueue = new Queue<>();
+    this.runningQueue = new Queue<>();
+    this.blockedQueue = new Queue<>();
+    this.exitQueue = new Queue<>();
+    this.nextProcessId = 1;
+    
+    // Usar FIFOScheduler por defecto
+    this.diskScheduler = new FIFOScheduler();
+}
     
     // ==================== CREACIÓN DE PROCESOS ====================
     
@@ -90,13 +96,14 @@ public class ProcessManager {
         if (readyQueue.isEmpty()) {
             return null;
         }
-        
-        // Por ahora usamos FIFO simple - luego lo reemplazaremos con DiskScheduler
-        Process nextProcess = readyQueue.dequeue();
-        nextProcess.setState(Process.ProcessState.RUNNING);
-        runningQueue.enqueue(nextProcess);
+
+        Process nextProcess = diskScheduler.selectNextProcess(readyQueue);
+        if (nextProcess != null) {
+            nextProcess.setState(Process.ProcessState.RUNNING);
+            runningQueue.enqueue(nextProcess);
+        }
         return nextProcess;
-    }
+}
     
     /**
      * Bloquea un proceso (cuando necesita E/S)
@@ -142,6 +149,16 @@ public class ProcessManager {
         }
         return false;
     }
+    
+    public void setDiskScheduler(DiskScheduler scheduler) {
+        this.diskScheduler = scheduler;
+    }
+    
+    public DiskScheduler getDiskScheduler() {
+        return diskScheduler;
+    }
+    
+    
     
     // ==================== MÉTODOS DE CONSULTA ====================
     

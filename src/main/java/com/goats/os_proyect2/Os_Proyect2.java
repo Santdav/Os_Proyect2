@@ -30,7 +30,10 @@ public class Os_Proyect2 {
         ProcessTest.testProcessOperations();
         ProcessTest.testProcessTiming();
         */
-        ProcessManagerTest.runAllTests();
+        
+        //ProcessManagerTest.runAllTests();
+        
+        DiskSchedulerTest.runAllTest();
         
     }
 }

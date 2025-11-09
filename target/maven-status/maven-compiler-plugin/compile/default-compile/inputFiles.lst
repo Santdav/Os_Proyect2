@@ -10,6 +10,12 @@ C:\Users\santi\OneDrive\Documents\NetBeansProjects\Os_Proyect2\src\main\java\Log
 C:\Users\santi\OneDrive\Documents\NetBeansProjects\Os_Proyect2\src\main\java\LogicalStrucures\StorageDisk.java
 C:\Users\santi\OneDrive\Documents\NetBeansProjects\Os_Proyect2\src\main\java\Managers\FileSystemManager.java
 C:\Users\santi\OneDrive\Documents\NetBeansProjects\Os_Proyect2\src\main\java\Managers\ProcessManager.java
+C:\Users\santi\OneDrive\Documents\NetBeansProjects\Os_Proyect2\src\main\java\Schedulers\CSCANScheduler.java
+C:\Users\santi\OneDrive\Documents\NetBeansProjects\Os_Proyect2\src\main\java\Schedulers\DiskScheduler.java
+C:\Users\santi\OneDrive\Documents\NetBeansProjects\Os_Proyect2\src\main\java\Schedulers\FIFOScheduler.java
+C:\Users\santi\OneDrive\Documents\NetBeansProjects\Os_Proyect2\src\main\java\Schedulers\SCANScheduler.java
+C:\Users\santi\OneDrive\Documents\NetBeansProjects\Os_Proyect2\src\main\java\Schedulers\SSTFScheduler.java
+C:\Users\santi\OneDrive\Documents\NetBeansProjects\Os_Proyect2\src\main\java\Testing\DiskSchedulerTest.java
 C:\Users\santi\OneDrive\Documents\NetBeansProjects\Os_Proyect2\src\main\java\Testing\FileSystemTest.java
 C:\Users\santi\OneDrive\Documents\NetBeansProjects\Os_Proyect2\src\main\java\Testing\ProcessManagerTest.java
 C:\Users\santi\OneDrive\Documents\NetBeansProjects\Os_Proyect2\src\main\java\Testing\ProcessTest.java
