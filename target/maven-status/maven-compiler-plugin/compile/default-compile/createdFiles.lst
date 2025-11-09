@@ -10,11 +10,13 @@ LogicalStrucures\File.class
 DataStructures\LinkedList$LinkedListIterator.class
 DataStructures\LinkedList.class
 LogicalStrucures\Permissions.class
+Managers\ProcessManager.class
 DataStructures\Block.class
 DataStructures\Queue$Node.class
 DataStructures\Queue$QueueIterator.class
 LogicalStrucures\StorageDisk.class
 LogicalStrucures\Directory.class
+Testing\ProcessManagerTest.class
 Managers\FileSystemManager.class
 Managers\FileSystemManager$FileEntry.class
 DataStructures\FileSystemElement.class

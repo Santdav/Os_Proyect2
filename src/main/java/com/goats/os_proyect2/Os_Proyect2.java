@@ -23,13 +23,14 @@ public class Os_Proyect2 {
         tester.runAllTests(); // Prueba COMPLETA con todo y todo
         */
         
-        
+        /*
         //PRUEBAS DE PROCESS
         ProcessTest.testProcessCreation();
         ProcessTest.testProcessStates();
         ProcessTest.testProcessOperations();
         ProcessTest.testProcessTiming();
-        
+        */
+        ProcessManagerTest.runAllTests();
         
     }
 }
