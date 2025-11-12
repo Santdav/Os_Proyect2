@@ -87,4 +87,10 @@ public class File extends FileSystemElement {
     public boolean isFile() {
         return true;
     }
+    
+    /*public boolean canRead(User currentUser) {
+        if (currentUser.isAdmin()) return true;
+        return getPermissions().canRead() && 
+               (getPermissions().isPublic() || getOwner().equals(currentUser.getName()));
+    }*/
 }

@@ -3,88 +3,231 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package LogicalStrucures;
-
+import DataStructures.User;
+import DataStructures.UserSession;
 /**
  *
  * @author santi
  */
+/**
+ * Gestiona los permisos de archivos/directorios considerando dueño y otros usuarios
+ */
 public class Permissions {
-    private boolean canRead;
-    private boolean canWrite;
-    private boolean canExecute;
-    private boolean isPublic;
+    private String owner;
+    private boolean ownerRead;
+    private boolean ownerWrite;
+    private boolean ownerExecute;
+    private boolean publicRead;
+    private boolean publicWrite;
+    private boolean publicExecute;
     
-    public Permissions() {
-        this.canRead = true;
-        this.canWrite = true;
-        this.canExecute = true;
-        this.isPublic = true;
+    // ==================== CONSTRUCTORES ====================
+    
+    /**
+     * Constructor por defecto - permisos mínimos
+     */
+    public Permissions(String owner) {
+        this.owner = owner;
+        this.ownerRead = true;
+        this.ownerWrite = true;
+        this.ownerExecute = false;
+        this.publicRead = false;
+        this.publicWrite = false;
+        this.publicExecute = false;
     }
     
-    // Constructor para permisos específicos
-    public Permissions(boolean canRead, boolean canWrite, boolean canExecute, boolean isPublic) {
-        this.canRead = canRead;
-        this.canWrite = canWrite;
-        this.canExecute = canExecute;
-        this.isPublic = isPublic;
+    /**
+     * Constructor completo
+     */
+    public Permissions(String owner, boolean ownerRead, boolean ownerWrite, boolean ownerExecute,
+                      boolean publicRead, boolean publicWrite, boolean publicExecute) {
+        this.owner = owner;
+        this.ownerRead = ownerRead;
+        this.ownerWrite = ownerWrite;
+        this.ownerExecute = ownerExecute;
+        this.publicRead = publicRead;
+        this.publicWrite = publicWrite;
+        this.publicExecute = publicExecute;
     }
     
-    // Métodos para modo administrador (todos los permisos)
-    public void setAdminPermissions() {
-        this.canRead = true;
-        this.canWrite = true;
-        this.canExecute = true;
-        this.isPublic = true;
+    // ==================== MÉTODOS DE VERIFICACIÓN ====================
+    
+    /**
+     * Verifica si un usuario puede leer este elemento
+     */
+    public boolean canRead(User user) {
+        if (user.isAdmin()) return true;
+        if (user.getUsername().equals(owner)) return ownerRead;
+        return publicRead;
     }
     
-    // Métodos para modo usuario (solo lectura)
-    public void setUserPermissions() {
-        this.canRead = true;
-        this.canWrite = false;
-        this.canExecute = false;
-        this.isPublic = false;
+    /**
+     * Verifica si un usuario puede escribir este elemento
+     */
+    public boolean canWrite(User user) {
+        if (user.isAdmin()) return true;
+        if (user.getUsername().equals(owner)) return ownerWrite;
+        return publicWrite;
     }
     
-    // Getters
+    /**
+     * Verifica si un usuario puede ejecutar este elemento
+     */
+    public boolean canExecute(User user) {
+        if (user.isAdmin()) return true;
+        if (user.getUsername().equals(owner)) return ownerExecute;
+        return publicExecute;
+    }
+    
+    /**
+     * Verifica permisos usando la sesión actual
+     */
     public boolean canRead() {
-        return canRead;
+        return canRead(UserSession.getInstance().getCurrentUser());
     }
     
     public boolean canWrite() {
-        return canWrite;
+        return canWrite(UserSession.getInstance().getCurrentUser());
     }
     
     public boolean canExecute() {
-        return canExecute;
+        return canExecute(UserSession.getInstance().getCurrentUser());
     }
     
-    public boolean isPublic() {
-        return isPublic;
+    // ==================== CONFIGURACIONES PREDEFINIDAS ====================
+    
+    /**
+     * Permisos para archivos del sistema (solo admin)
+     */
+    public void setSystemPermissions() {
+        this.ownerRead = true;
+        this.ownerWrite = true;
+        this.ownerExecute = true;
+        this.publicRead = false;
+        this.publicWrite = false;
+        this.publicExecute = false;
     }
     
-    // Setters
-    public void setCanRead(boolean canRead) {
-        this.canRead = canRead;
+    /**
+     * Permisos para archivos públicos (todos pueden leer)
+     */
+    public void setPublicReadOnly() {
+        this.ownerRead = true;
+        this.ownerWrite = true;
+        this.ownerExecute = false;
+        this.publicRead = true;
+        this.publicWrite = false;
+        this.publicExecute = false;
     }
     
-    public void setCanWrite(boolean canWrite) {
-        this.canWrite = canWrite;
+    /**
+     * Permisos para archivos privados (solo dueño)
+     */
+    public void setPrivatePermissions() {
+        this.ownerRead = true;
+        this.ownerWrite = true;
+        this.ownerExecute = false;
+        this.publicRead = false;
+        this.publicWrite = false;
+        this.publicExecute = false;
     }
     
-    public void setCanExecute(boolean canExecute) {
-        this.canExecute = canExecute;
+    /**
+     * Permisos para ejecutables (dueño puede ejecutar)
+     */
+    public void setExecutablePermissions() {
+        this.ownerRead = true;
+        this.ownerWrite = true;
+        this.ownerExecute = true;
+        this.publicRead = true;
+        this.publicWrite = false;
+        this.publicExecute = false;
     }
     
-    public void setIsPublic(boolean isPublic) {
-        this.isPublic = isPublic;
+    // ==================== GETTERS ====================
+    public String getOwner() {
+        return owner;
     }
     
-    // Método para verificar permisos básicos
-    public boolean hasReadPermission() {
-        return canRead;
+    public boolean isOwnerRead() {
+        return ownerRead;
     }
     
-    public boolean hasWritePermission() {
-        return canWrite;
+    public boolean isOwnerWrite() {
+        return ownerWrite;
+    }
+    
+    public boolean isOwnerExecute() {
+        return ownerExecute;
+    }
+    
+    public boolean isPublicRead() {
+        return publicRead;
+    }
+    
+    public boolean isPublicWrite() {
+        return publicWrite;
+    }
+    
+    public boolean isPublicExecute() {
+        return publicExecute;
+    }
+    
+    // ==================== SETTERS ====================
+    public void setOwner(String owner) {
+        this.owner = owner;
+    }
+    
+    public void setOwnerRead(boolean ownerRead) {
+        this.ownerRead = ownerRead;
+    }
+    
+    public void setOwnerWrite(boolean ownerWrite) {
+        this.ownerWrite = ownerWrite;
+    }
+    
+    public void setOwnerExecute(boolean ownerExecute) {
+        this.ownerExecute = ownerExecute;
+    }
+    
+    public void setPublicRead(boolean publicRead) {
+        this.publicRead = publicRead;
+    }
+    
+    public void setPublicWrite(boolean publicWrite) {
+        this.publicWrite = publicWrite;
+    }
+    
+    public void setPublicExecute(boolean publicExecute) {
+        this.publicExecute = publicExecute;
+    }
+    
+    // ==================== REPRESENTACIÓN DE PERMISOS ====================
+    
+    /**
+     * Representación estilo UNIX (rwxrwxrwx)
+     */
+    public String toUnixString() {
+        return (ownerRead ? "r" : "-") +
+               (ownerWrite ? "w" : "-") +
+               (ownerExecute ? "x" : "-") +
+               (publicRead ? "r" : "-") +
+               (publicWrite ? "w" : "-") +
+               (publicExecute ? "x" : "-");
+    }
+    
+    /**
+     * Descripción legible de permisos
+     */
+    public String getPermissionDescription() {
+        if (publicRead && publicWrite) return "Público (Lectura/Escritura)";
+        if (publicRead) return "Público (Solo Lectura)";
+        if (publicWrite) return "Público (Solo Escritura)";
+        return "Privado (Solo Dueño)";
+    }
+    
+    @Override
+    public String toString() {
+        return String.format("Permisos[Dueño:%s, %s]", owner, toUnixString());
     }
 }

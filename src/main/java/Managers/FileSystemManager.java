@@ -10,6 +10,7 @@ import LogicalStrucures.File;
 import DataStructures.FileSystemElement;
 import DataStructures.LinkedList;
 import LogicalStrucures.StorageDisk;
+import DataStructures.UserSession;
 
 /**
  *
@@ -19,10 +20,9 @@ public class FileSystemManager {
     private final StorageDisk disk;
     private final Directory root;
     private final LinkedList<FileEntry> fileTable;
-    private String currentUser;
-    private boolean isAdminMode;
+    private final UserSession userSession;
     
-    // Clase interna para la tabla de archivos
+    // Clase interna para la tabla de archivos (se mantiene igual)
     public static class FileEntry {
         private final String fileName;
         private final String filePath;
@@ -53,34 +53,47 @@ public class FileSystemManager {
         this.disk = new StorageDisk(diskSize);
         this.root = new Directory("root", "admin", null);
         this.fileTable = new LinkedList<>();
-        this.currentUser = "admin";
-        this.isAdminMode = true;
+        this.userSession = UserSession.getInstance();
+        
+        // Configurar permisos del root como sistema (solo admin)
+        root.getPermissions().setSystemPermissions();
     }
     
     // ==================== GESTIÓN DE USUARIOS Y PERMISOS ====================
-    public void setCurrentUser(String user, boolean isAdmin) {
-        this.currentUser = user;
-        this.isAdminMode = isAdmin;
+    
+    /**
+     * Verifica permisos para una operación
+     */
+    public boolean hasPermission(FileSystemElement element, boolean writeOperation) {
+        if (userSession.isAdminMode()) return true;
+        
+        if (writeOperation) {
+            return userSession.canWrite(element);
+        } else {
+            return userSession.canRead(element);
+        }
     }
     
-    public boolean hasPermission(FileSystemElement element, boolean writeOperation) {
-        if (isAdminMode) return true;
-        if (writeOperation) return false; // Usuarios normales no pueden escribir
-        
-        // Usuarios normales solo pueden leer archivos propios o públicos
-        return element.getOwner().equals(currentUser) || 
-               element.getPermissions().isPublic();
+    /**
+     * Verifica si el usuario actual puede eliminar el elemento
+     */
+    public boolean canDelete(FileSystemElement element) {
+        return userSession.canDelete(element);
     }
     
     // ==================== OPERACIONES DE ARCHIVOS ====================
     public boolean createFile(String path, String fileName, int sizeInBlocks) {
-        if (!isAdminMode) return false;
+        // Solo administradores pueden crear archivos
+        if (!userSession.isAdminMode()) {
+            System.out.println("DEBUG: Usuario normal no puede crear archivos");
+            return false;
+        }
 
         Directory parent = findDirectory(path);
         if (parent == null) return false;
 
         if (parent.getChild(fileName) != null) {
-            return false;
+            return false; // Ya existe
         }
 
         if (!disk.hasEnoughSpace(sizeInBlocks)) {
@@ -97,7 +110,8 @@ public class FileSystemManager {
             return false;
         }
 
-        // Crear el archivo
+        // Crear el archivo con el usuario actual como dueño
+        String currentUser = userSession.getCurrentUsername();
         File newFile = new File(fileName, currentUser, sizeInBlocks, parent);
 
         // Asignar bloques en cadena - USAR LOS BLOQUES QUE YA RESERVAMOS
@@ -122,8 +136,6 @@ public class FileSystemManager {
     }
     
     public boolean deleteFile(String path, String fileName) {
-        if (!isAdminMode) return false; // Solo admin puede eliminar archivos
-        
         Directory parent = findDirectory(path);
         if (parent == null) return false;
         
@@ -133,6 +145,12 @@ public class FileSystemManager {
         }
         
         File file = (File) element;
+        
+        // Verificar permisos de eliminación
+        if (!canDelete(file)) {
+            System.out.println("DEBUG: Usuario no tiene permisos para eliminar: " + fileName);
+            return false;
+        }
         
         // Liberar bloques
         if (file.getFirstBlock() != null) {
@@ -157,20 +175,46 @@ public class FileSystemManager {
         
         File file = (File) element;
         
-        // Verificar permisos de lectura
-        if (!hasPermission(file, false)) {
+        // Verificar permisos de lectura usando UserSession
+        if (!userSession.canRead(file)) {
+            System.out.println("DEBUG: Usuario no tiene permisos de lectura: " + fileName);
             return null;
         }
         
         return file;
     }
     
+    /**
+     * Actualizar contenido de archivo (requiere permisos de escritura)
+     */
+    public boolean updateFile(String path, String fileName, String newContent) {
+        Directory parent = findDirectory(path);
+        if (parent == null) return false;
+        
+        FileSystemElement element = parent.getChild(fileName);
+        if (element == null || element.isDirectory()) {
+            return false;
+        }
+        
+        File file = (File) element;
+        
+        // Verificar permisos de escritura
+        if (!userSession.canWrite(file)) {
+            System.out.println("DEBUG: Usuario no tiene permisos de escritura: " + fileName);
+            return false;
+        }
+        
+        file.setContent(newContent);
+        return true;
+    }
+    
     // ==================== OPERACIONES DE DIRECTORIOS ====================
     public boolean createDirectory(String path, String dirName) {
-        if (!isAdminMode) {
-        System.out.println("DEBUG: Usuario normal no puede crear directorios");
-        return false;
-    }
+        // Solo administradores pueden crear directorios
+        if (!userSession.isAdminMode()) {
+            System.out.println("DEBUG: Usuario normal no puede crear directorios");
+            return false;
+        }
         
         Directory parent = findDirectory(path);
         if (parent == null) return false;
@@ -179,14 +223,14 @@ public class FileSystemManager {
             return false; // Ya existe
         }
         
+        // Crear directorio con el usuario actual como dueño
+        String currentUser = userSession.getCurrentUsername();
         Directory newDir = new Directory(dirName, currentUser, parent);
         parent.addChild(newDir);
         return true;
     }
     
     public boolean deleteDirectory(String path, String dirName) {
-        if (!isAdminMode) return false;
-
         Directory parent = findDirectory(path);
         if (parent == null) return false;
 
@@ -196,6 +240,12 @@ public class FileSystemManager {
         }
 
         Directory dir = (Directory) element;
+
+        // Verificar permisos de eliminación
+        if (!canDelete(dir)) {
+            System.out.println("DEBUG: Usuario no tiene permisos para eliminar directorio: " + dirName);
+            return false;
+        }
 
         // PRIMERO: Eliminar recursivamente todo el contenido
         deleteDirectoryRecursive(dir);
@@ -233,36 +283,48 @@ public class FileSystemManager {
         }
         System.out.println("DEBUG: Directorio vacío: " + dir.getPath());
     }
-// ==================== BÚSQUEDA Y NAVEGACIÓN ====================
+
+    // ==================== BÚSQUEDA Y NAVEGACIÓN ====================
     public Directory findDirectory(String path) {
-    if (path.equals("/") || path.isEmpty() || path.equals("/root")) {
-        return root;
-    }
-    
-    // Limpiar el path
-    String cleanPath = path.startsWith("/") ? path.substring(1) : path;
-    if (cleanPath.endsWith("/")) {
-        cleanPath = cleanPath.substring(0, cleanPath.length() - 1);
-    }
-    
-    String[] parts = cleanPath.split("/");
-    Directory current = root;
-    
-    for (String part : parts) {
-        if (part.isEmpty()) continue;
-        
-        FileSystemElement element = current.getChild(part);
-        if (element == null || !element.isDirectory()) {
-            return null;
+        if (path.equals("/") || path.isEmpty() || path.equals("/root")) {
+            return root;
         }
-        current = (Directory) element;
+        
+        // Limpiar el path
+        String cleanPath = path.startsWith("/") ? path.substring(1) : path;
+        if (cleanPath.endsWith("/")) {
+            cleanPath = cleanPath.substring(0, cleanPath.length() - 1);
+        }
+        
+        String[] parts = cleanPath.split("/");
+        Directory current = root;
+        
+        for (String part : parts) {
+            if (part.isEmpty()) continue;
+            
+            FileSystemElement element = current.getChild(part);
+            if (element == null || !element.isDirectory()) {
+                return null;
+            }
+            
+            // Verificar permisos de lectura para el directorio
+            if (!userSession.canRead(element)) {
+                System.out.println("DEBUG: Sin permisos de lectura para directorio: " + part);
+                return null;
+            }
+            
+            current = (Directory) element;
+        }
+        
+        return current;
     }
-    
-    return current;
-}
     
     public FileSystemElement findElement(String path) {
-        return root.findElement(path);
+        FileSystemElement element = root.findElement(path);
+        if (element != null && !userSession.canRead(element)) {
+            return null; // Sin permisos de lectura
+        }
+        return element;
     }
     
     // ==================== GESTIÓN DE TABLA DE ARCHIVOS ====================
@@ -300,18 +362,21 @@ public class FileSystemManager {
     }
     
     public String getCurrentUser() {
-        return currentUser;
+        return userSession.getCurrentUsername();
     }
     
     public boolean isAdminMode() {
-        return isAdminMode;
+        return userSession.isAdminMode();
+    }
+    
+    public UserSession getUserSession() {
+        return userSession;
     }
     
     // ==================== ESTADO DEL SISTEMA ====================
     public String getSystemStatus() {
-        return String.format("User: %s, Mode: %s, %s", 
-                           currentUser, 
-                           isAdminMode ? "Admin" : "User",
+        return String.format("%s, %s", 
+                           userSession.getSessionInfo(),
                            disk.getDiskStatus());
     }
 }

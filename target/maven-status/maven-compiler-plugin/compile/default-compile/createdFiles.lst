@@ -17,14 +17,15 @@ Testing\FileSystemTest.class
 LogicalStrucures\Process$IOOperation.class
 LogicalStrucures\Process$ProcessState.class
 Schedulers\DiskScheduler.class
+DataStructures\User.class
 Schedulers\CSCANScheduler.class
 DataStructures\LinkedList.class
 Managers\ProcessManager.class
 DataStructures\Queue$Node.class
 DataStructures\Queue$QueueIterator.class
+DataStructures\UserSession.class
 LogicalStrucures\StorageDisk.class
 LogicalStrucures\Directory.class
-UIComponents\FileTreePanel$FileTreeCellRenderer.class
 Schedulers\FIFOScheduler.class
 Testing\ProcessManagerTest.class
 Managers\FileSystemManager.class

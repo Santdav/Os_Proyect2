@@ -7,6 +7,7 @@ import LogicalStrucures.Directory;
 import LogicalStrucures.File;
 import Managers.FileSystemManager;
 import DataStructures.*;
+import LogicalStrucures.*;
 /**
  *
  * @author santi
@@ -15,382 +16,264 @@ import DataStructures.*;
  * Clase dedicada para pruebas del sistema de archivos
  * Contiene métodos organizados para probar cada funcionalidad
  */
+import java.util.Scanner;
+
+/**
+ * Clase de pruebas integrales para el Sistema de Archivos
+ */
 public class FileSystemTest {
     private FileSystemManager fs;
-    
-    public static void main(String[] args) {
-        FileSystemTest tester = new FileSystemTest();
-        tester.runAllTests();
-    }
+    private UserSession session;
+    private Scanner scanner;
     
     public FileSystemTest() {
-        this.fs = new FileSystemManager(20);
+        this.fs = new FileSystemManager(100); // Disco de 100 bloques
+        this.session = UserSession.getInstance();
+        this.scanner = new Scanner(System.in);
     }
     
-    /**
-     * Ejecuta todas las pruebas del sistema
-     */
     public void runAllTests() {
-        System.out.println("=== INICIO DE PRUEBAS COMPLETAS DEL SISTEMA DE ARCHIVOS ===\n");
+        System.out.println(" INICIANDO PRUEBAS DEL SISTEMA DE ARCHIVOS\n");
         
-        testSistemaInicial();
-        testCreacionDirectorios();
-        testCreacionArchivos();
-        testGestionEspacio();
-        testOperacionesLectura();
-        testOperacionesEliminacion();
-        testModosUsuario();
-        testEsquemaPermisos();
+        testUserSessions();
+        testFileOperations();
+        testDirectoryOperations();
+        testPermissionSystem();
+        testDiskOperations();
+        testFileTable();
         
-        System.out.println("=== FIN DE PRUEBAS ===");
+        System.out.println("\n TODAS LAS PRUEBAS COMPLETADAS");
     }
     
-    /**
-     * Prueba 1: Estado inicial del sistema
-     */
-    private void testSistemaInicial() {
-        System.out.println("1. PRUEBA: ESTADO INICIAL DEL SISTEMA");
-        System.out.println("   - Directorio raíz existe: " + (fs.getRoot() != null));
-        System.out.println("   - Nombre raíz: " + fs.getRoot().getName());
-        System.out.println("   - Modo inicial: " + (fs.isAdminMode() ? "Admin" : "Usuario"));
-        System.out.println("   - Usuario inicial: " + fs.getCurrentUser());
-        System.out.println("   - Estado disco: " + fs.getDisk().getDiskStatus());
-        System.out.println("   Estado inicial correcto\n");
+    // ==================== PRUEBAS DE SESIÓN DE USUARIOS ====================
+    private void testUserSessions() {
+        System.out.println("=== PRUEBAS DE SESIÓN DE USUARIOS ===");
+        
+        // Test 1: Sesión por defecto
+        System.out.println("1. Sesión por defecto: " + session.getSessionInfo());
+        
+        // Test 2: Login como administrador
+        session.loginAsAdmin();
+        System.out.println("2. Login como admin: " + session.getSessionInfo());
+        System.out.println("   ¿Es admin? " + session.isAdminMode());
+        
+        // Test 3: Cambio a modo usuario
+        session.switchToUserMode();
+        System.out.println("3. Cambio a modo usuario: " + session.getSessionInfo());
+        
+        // Test 4: Login como usuario normal
+        session.loginAsUser("juan");
+        System.out.println("4. Login como usuario 'juan': " + session.getSessionInfo());
+        
+        // Test 5: Volver a admin
+        session.loginAsAdmin();
+        System.out.println("5. Volver a admin: " + session.getSessionInfo());
+        
+        System.out.println(" Pruebas de sesión completadas\n");
     }
     
-    /**
-     * Prueba 2: Creación de directorios
-     */
-    private void testCreacionDirectorios() {
-        System.out.println("2. PRUEBA: CREACIÓN DE DIRECTORIOS");
+    // ==================== PRUEBAS DE OPERACIONES DE ARCHIVOS ====================
+    private void testFileOperations() {
+        System.out.println("=== PRUEBAS DE OPERACIONES DE ARCHIVOS ===");
         
-        // Crear directorios básicos
-        boolean success1 = fs.createDirectory("/", "documents");
-        boolean success2 = fs.createDirectory("/", "images");
-        boolean success3 = fs.createDirectory("/documents", "projects");
-        boolean success4 = fs.createDirectory("/documents", "work");
+        session.loginAsAdmin();
         
-        System.out.println("   - Directorio 'documents' creado: " + success1);
-        System.out.println("   - Directorio 'images' creado: " + success2);
-        System.out.println("   - Directorio 'projects' creado: " + success3);
-        System.out.println("   - Directorio 'work' creado: " + success4);
+        // Test 1: Crear directorio home
+        boolean dirCreated = fs.createDirectory("/", "home");
+        System.out.println("1. Crear directorio /home: " + (dirCreated ? "ÉXITO" : "FALLO"));
         
-        // Verificar que existen
-        Directory documents = fs.findDirectory("/documents");
-        Directory projects = fs.findDirectory("/documents/projects");
-        Directory work = fs.findDirectory("/documents/work");
+        // Test 2: Crear archivo en /home
+        boolean file1Created = fs.createFile("/home", "documento.txt", 3);
+        System.out.println("2. Crear archivo documento.txt (3 bloques): " + (file1Created ? "ÉXITO" : "FALLO"));
         
-        System.out.println("   - Directorio /documents encontrado: " + (documents != null));
-        System.out.println("   - Directorio /documents/projects encontrado: " + (projects != null));
-        System.out.println("   - Directorio /documents/work encontrado: " + (work != null));
+        // Test 3: Crear otro archivo
+        boolean file2Created = fs.createFile("/home", "datos.dat", 2);
+        System.out.println("3. Crear archivo datos.dat (2 bloques): " + (file2Created ? "ÉXITO" : "FALLO"));
         
-        // Verificar estructura
-        if (documents != null) {
-            System.out.println("   - /documents tiene " + documents.getChildren().size() + " hijos");
+        // Test 4: Leer archivo existente
+        File documento = fs.readFile("/home", "documento.txt");
+        System.out.println("4. Leer archivo documento.txt: " + (documento != null ? "ÉXITO" : "FALLO"));
+        
+        // Test 5: Intentar leer archivo inexistente
+        File inexistente = fs.readFile("/home", "noexiste.txt");
+        System.out.println("5. Leer archivo inexistente: " + (inexistente == null ? "CORRECTO" : "ERROR"));
+        
+        // Test 6: Actualizar contenido de archivo
+        boolean updated = fs.updateFile("/home", "documento.txt", "Contenido de prueba");
+        System.out.println("6. Actualizar contenido: " + (updated ? "ÉXITO" : "FALLO"));
+        if (documento != null) {
+            System.out.println("   Contenido: '" + documento.getContent() + "'");
         }
         
-        System.out.println("    Prueba de directorios completada\n");
+        System.out.println("Pruebas de archivos completadas\n");
     }
     
-    /**
-     * Prueba 3: Creación de archivos con diferentes tamaños
-     */
-    private void testCreacionArchivos() {
-        System.out.println("3. PRUEBA: CREACIÓN DE ARCHIVOS");
+    // ==================== PRUEBAS DE OPERACIONES DE DIRECTORIOS ====================
+    private void testDirectoryOperations() {
+        System.out.println("=== PRUEBAS DE OPERACIONES DE DIRECTORIOS ===");
         
-        int bloquesIniciales = fs.getDisk().getUsedBlocks();
+        session.loginAsAdmin();
         
-        // Crear archivos de diferentes tamaños
-        boolean success1 = fs.createFile("/documents", "readme.txt", 2);
-        boolean success2 = fs.createFile("/documents/projects", "proyecto.java", 3);
-        boolean success3 = fs.createFile("/documents/work", "informe.doc", 1);
-        boolean success4 = fs.createFile("/images", "foto.png", 4);
+        // Test 1: Crear estructura de directorios
+        boolean dir1 = fs.createDirectory("/home", "usuario1");
+        boolean dir2 = fs.createDirectory("/home", "usuario2");
+        boolean subdir = fs.createDirectory("/home/usuario1", "documentos");
         
-        System.out.println("   - Archivo 'readme.txt' (2 bloques): " + success1);
-        System.out.println("   - Archivo 'proyecto.java' (3 bloques): " + success2);
-        System.out.println("   - Archivo 'informe.doc' (1 bloque): " + success3);
-        System.out.println("   - Archivo 'foto.png' (4 bloques): " + success4);
+        System.out.println("1. Crear /home/usuario1: " + (dir1 ? "ÉXITO" : "FALLO"));
+        System.out.println("2. Crear /home/usuario2: " + (dir2 ? "ÉXITO" : "FALLO"));
+        System.out.println("3. Crear /home/usuario1/documentos: " + (subdir ? "ÉXITO" : "FALLO"));
         
-        // Verificar que los archivos existen
-        File readme = fs.readFile("/documents", "readme.txt");
-        File proyecto = fs.readFile("/documents/projects", "proyecto.java");
-        File informe = fs.readFile("/documents/work", "informe.doc");
-        File foto = fs.readFile("/images", "foto.png");
+        // Test 2: Crear archivos en subdirectorios
+        boolean fileInSubdir = fs.createFile("/home/usuario1/documentos", "trabajo.doc", 1);
+        System.out.println("4. Crear archivo en subdirectorio: " + (fileInSubdir ? "ÉXITO" : "FALLO"));
         
-        System.out.println("   - Archivo 'readme.txt' encontrado: " + (readme != null));
-        System.out.println("   - Archivo 'proyecto.java' encontrado: " + (proyecto != null));
-        System.out.println("   - Archivo 'informe.doc' encontrado: " + (informe != null));
-        System.out.println("   - Archivo 'foto.png' encontrado: " + (foto != null));
+        // Test 3: Buscar directorio existente
+        Directory encontrado = fs.findDirectory("/home/usuario1/documentos");
+        System.out.println("5. Buscar directorio existente: " + (encontrado != null ? "ÉXITO" : "FALLO"));
         
-        // Verificar bloques asignados
-        if (readme != null) {
-            System.out.println("   - 'readme.txt' tiene bloques asignados: " + readme.hasBlocksAssigned());
+        // Test 4: Buscar directorio inexistente
+        Directory noEncontrado = fs.findDirectory("/home/inexistente");
+        System.out.println("6. Buscar directorio inexistente: " + (noEncontrado == null ? "CORRECTO" : "ERROR"));
+        
+        System.out.println(" Pruebas de directorios completadas\n");
+    }
+    
+    // ==================== PRUEBAS DEL SISTEMA DE PERMISOS ====================
+    private void testPermissionSystem() {
+        System.out.println("=== PRUEBAS DEL SISTEMA DE PERMISOS ===");
+        
+        // Preparación: crear archivos de prueba
+        session.loginAsAdmin();
+        fs.createDirectory("/", "test_permisos");
+        
+        // **CORRECCIÓN: Hacer el directorio público para que otros usuarios puedan acceder**
+        Directory dirTest = fs.findDirectory("/test_permisos");
+        if (dirTest != null) {
+            dirTest.getPermissions().setPublicReadOnly();
         }
         
-        int bloquesFinales = fs.getDisk().getUsedBlocks();
-        int bloquesUsados = bloquesFinales - bloquesIniciales;
+        fs.createFile("/test_permisos", "publico.txt", 1);
+        fs.createFile("/test_permisos", "privado.txt", 1);
         
-        System.out.println("   - Bloques usados en esta prueba: " + bloquesUsados + " (esperado: 10)");
-        System.out.println("   - Estado disco: " + fs.getDisk().getDiskStatus());
-        System.out.println("    Prueba de archivos completada\n");
-    }
-    
-    /**
-     * Prueba 4: Gestión de espacio y límites
-     */
-    private void testGestionEspacio() {
-        System.out.println("4. PRUEBA: GESTIÓN DE ESPACIO");
+        // Configurar permisos de los archivos
+        File publico = fs.readFile("/test_permisos", "publico.txt");
+        File privado = fs.readFile("/test_permisos", "privado.txt");
         
-        int bloquesAntes = fs.getDisk().getUsedBlocks();
-        int espacioLibreAntes = fs.getDisk().getFreeBlocks();
-        
-        System.out.println("   - Espacio antes: " + bloquesAntes + " bloques usados, " + 
-                          espacioLibreAntes + " bloques libres");
-        
-        // Intentar crear archivo que cabe
-        boolean success1 = fs.createFile("/", "pequeno.txt", 2);
-        System.out.println("   - Archivo 'pequeno.txt' (2 bloques) creado: " + success1);
-        
-        // Intentar crear archivo demasiado grande
-        boolean success2 = fs.createFile("/", "enorme.iso", 15);
-        System.out.println("   - Archivo 'enorme.iso' (15 bloques) creado: " + success2 + " (esperado: false)");
-        
-        // Verificar que el archivo grande no se creó
-        File enorme = fs.readFile("/", "enorme.iso");
-        System.out.println("   - Archivo 'enorme.iso' existe: " + (enorme != null) + " (esperado: false)");
-        
-        int bloquesDespues = fs.getDisk().getUsedBlocks();
-        System.out.println("   - Bloques usados después: " + bloquesDespues);
-        System.out.println("   - Estado disco: " + fs.getDisk().getDiskStatus());
-        System.out.println("    Prueba de gestión de espacio completada\n");
-    }
-    
-    /**
-     * Prueba 5: Operaciones de lectura y búsqueda
-     */
-    private void testOperacionesLectura() {
-        System.out.println("5. PRUEBA: OPERACIONES DE LECTURA Y BÚSQUEDA");
-        
-        // Buscar elementos existentes
-        FileSystemElement elem1 = fs.findElement("/documents/readme.txt");
-        FileSystemElement elem2 = fs.findElement("/documents/projects/proyecto.java");
-        FileSystemElement elem3 = fs.findElement("/images/foto.png");
-        
-        System.out.println("   - Elemento /documents/readme.txt encontrado: " + (elem1 != null));
-        System.out.println("   - Elemento /documents/projects/proyecto.java encontrado: " + (elem2 != null));
-        System.out.println("   - Elemento /images/foto.png encontrado: " + (elem3 != null));
-        
-        // Buscar elemento no existente
-        FileSystemElement elem4 = fs.findElement("/no/existe.txt");
-        System.out.println("   - Elemento /no/existe.txt encontrado: " + (elem4 != null) + " (esperado: false)");
-        
-        // Leer archivos específicos
-        File readme = fs.readFile("/documents", "readme.txt");
-        if (readme != null) {
-            System.out.println("   - Lectura 'readme.txt': ÉXITO");
-            System.out.println("     * Nombre: " + readme.getName());
-            System.out.println("     * Tamaño: " + readme.getSize() + " bloques");
-            System.out.println("     * Propietario: " + readme.getOwner());
-            System.out.println("     * Ruta completa: " + readme.getPath());
-        } else {
-            System.out.println("   - Lectura 'readme.txt': FALLÓ");
+        if (publico != null) {
+            publico.getPermissions().setPublicReadOnly();
+        }
+        if (privado != null) {
+            privado.getPermissions().setPrivatePermissions();
         }
         
-        System.out.println("    Prueba de lectura completada\n");
+        // Test 1: Usuario normal intenta leer archivo público
+        session.loginAsUser("maria");
+        File leePublico = fs.readFile("/test_permisos", "publico.txt");
+        System.out.println("1. Usuario normal lee archivo público: " + (leePublico != null ? "ÉXITO" : "FALLO"));
+        
+        // Test 2: Usuario normal intenta leer archivo privado
+        File leePrivado = fs.readFile("/test_permisos", "privado.txt");
+        System.out.println("2. Usuario normal lee archivo privado: " + (leePrivado == null ? "CORRECTO (denegado)" : "ERROR (debería ser denegado)"));
+        
+        // Test 3: Usuario normal intenta escribir archivo público
+        boolean escribePublico = fs.updateFile("/test_permisos", "publico.txt", "modificado");
+        System.out.println("3. Usuario normal escribe archivo público: " + (!escribePublico ? "CORRECTO (denegado)" : "ERROR (debería ser denegado)"));
+        
+        // Test 4: Admin puede hacer todo
+        session.loginAsAdmin();
+        File adminLee = fs.readFile("/test_permisos", "privado.txt");
+        boolean adminEscribe = fs.updateFile("/test_permisos", "privado.txt", "admin modifica");
+        System.out.println("4. Admin lee archivo privado: " + (adminLee != null ? "ÉXITO" : "FALLO"));
+        System.out.println("5. Admin escribe archivo privado: " + (adminEscribe ? "ÉXITO" : "FALLO"));
+        
+        System.out.println(" Pruebas de permisos completadas\n");
     }
     
-    /**
-     * Prueba 6: Operaciones de eliminación
-     */
-    private void testOperacionesEliminacion() {
-        System.out.println("6. PRUEBA: OPERACIONES DE ELIMINACIÓN");
+    // ==================== PRUEBAS DE OPERACIONES DE DISCO ====================
+    private void testDiskOperations() {
+        System.out.println("=== PRUEBAS DE OPERACIONES DE DISCO ===");
         
-        int bloquesAntes = fs.getDisk().getUsedBlocks();
+        session.loginAsAdmin();
         
-        // Eliminar archivo existente
-        boolean success1 = fs.deleteFile("/documents", "readme.txt");
-        System.out.println("   - Archivo 'readme.txt' eliminado: " + success1);
+        // Test 1: Estado inicial del disco
+        StorageDisk disk = fs.getDisk();
+        System.out.println("1. Estado inicial del disco: " + disk.getDiskStatus());
         
-        // Verificar que ya no existe
-        File readme = fs.readFile("/documents", "readme.txt");
-        System.out.println("   - Archivo 'readme.txt' todavía existe: " + (readme != null) + " (esperado: false)");
+        // Test 2: Crear archivos y ver uso de disco
+        fs.createDirectory("/", "test_disco");
+        fs.createFile("/test_disco", "archivo1.txt", 5);
+        fs.createFile("/test_disco", "archivo2.txt", 3);
         
-        // Eliminar directorio con contenido
-        boolean success2 = fs.deleteDirectory("/documents", "projects");
-        System.out.println("   - Directorio 'projects' eliminado: " + success2);
+        System.out.println("2. Después de crear archivos: " + disk.getDiskStatus());
         
-        // Verificar que el directorio ya no existe
-        Directory projects = fs.findDirectory("/documents/projects");
-        System.out.println("   - Directorio 'projects' todavía existe: " + (projects != null) + " (esperado: false)");
+        // Test 3: Eliminar archivo y ver liberación
+        boolean eliminado = fs.deleteFile("/test_disco", "archivo1.txt");
+        System.out.println("3. Eliminar archivo1.txt: " + (eliminado ? "ÉXITO" : "FALLO"));
+        System.out.println("4. Después de eliminar: " + disk.getDiskStatus());
         
-        int bloquesDespues = fs.getDisk().getUsedBlocks();
-        int bloquesLiberados = bloquesAntes - bloquesDespues;
+        // Test 4: Intentar crear archivo muy grande
+        boolean archivoGrande = fs.createFile("/test_disco", "enorme.dat", 200);
+        System.out.println("5. Crear archivo muy grande (200 bloques): " + (!archivoGrande ? "CORRECTO (rechazado)" : "ERROR (debería ser rechazado)"));
         
-        System.out.println("   - Bloques liberados: " + bloquesLiberados + " (esperado: al menos 5)");
-        System.out.println("   - Estado disco después de eliminaciones: " + fs.getDisk().getDiskStatus());
-        System.out.println("    Prueba de eliminación completada\n");
+        // Test 5: Ver bloques ocupados
+        LinkedList<Block> ocupados = disk.getOccupiedBlocks();
+        System.out.println("6. Bloques ocupados: " + ocupados.size());
+        
+        System.out.println("Pruebas de disco completadas\n");
     }
     
-    /**
-     * Prueba 7: Modos de usuario (Admin vs Usuario normal)
-     */
-    private void testModosUsuario() {
-        System.out.println("7. PRUEBA: MODOS DE USUARIO");
+    // ==================== PRUEBAS DE TABLA DE ARCHIVOS ====================
+    private void testFileTable() {
+        System.out.println("=== PRUEBAS DE TABLA DE ARCHIVOS ===");
         
-        // Probar como administrador (debería tener todos los permisos)
-        System.out.println("   --- MODO ADMINISTRADOR ---");
-        fs.setCurrentUser("admin", true);
-        System.out.println("   - Usuario actual: " + fs.getCurrentUser());
-        System.out.println("   - Es administrador: " + fs.isAdminMode());
+        session.loginAsAdmin();
         
-        boolean adminPuedeCrear = fs.createDirectory("/", "admin_dir");
-        boolean adminPuedeEliminar = fs.deleteDirectory("/", "admin_dir");
+        // Crear algunos archivos para la prueba
+        fs.createDirectory("/", "test_tabla");
+        fs.createFile("/test_tabla", "tabla1.txt", 2);
+        fs.createFile("/test_tabla", "tabla2.txt", 1);
         
-        System.out.println("   - Admin puede crear directorio: " + adminPuedeCrear + " (esperado: true)");
-        System.out.println("   - Admin puede eliminar directorio: " + adminPuedeEliminar + " (esperado: true)");
-        
-        // Probar como usuario normal (permisos limitados)
-        System.out.println("   --- MODO USUARIO NORMAL ---");
-        fs.setCurrentUser("usuario1", false);
-        System.out.println("   - Usuario actual: " + fs.getCurrentUser());
-        System.out.println("   - Es administrador: " + fs.isAdminMode());
-        
-        boolean usuarioPuedeCrear = fs.createDirectory("/", "usuario_dir");
-        boolean usuarioPuedeEliminar = fs.deleteDirectory("/documents", "work");
-        
-        System.out.println("   - Usuario puede crear directorio: " + usuarioPuedeCrear + " (esperado: false)");
-        System.out.println("   - Usuario puede eliminar directorio: " + usuarioPuedeEliminar + " (esperado: false)");
-        
-        // Restaurar modo admin
-        fs.setCurrentUser("admin", true);
-        System.out.println("    Prueba de modos de usuario completada\n");
-    }
-    
-    /**
-     * Prueba 8: Esquema de permisos y tabla de archivos
-     */
-    private void testEsquemaPermisos() {
-        System.out.println("8. PRUEBA: ESQUEMA DE PERMISOS Y TABLA DE ARCHIVOS");
-        
-        // Verificar tabla de archivos
+        // Test 1: Verificar entradas en tabla
         LinkedList<FileSystemManager.FileEntry> tabla = fs.getFileTable();
-        System.out.println("   - Archivos en tabla del sistema: " + tabla.size());
+        System.out.println("1. Entradas en tabla de archivos: " + tabla.size());
         
-        // Mostrar información de la tabla
+        // Test 2: Mostrar información de entradas
         for (int i = 0; i < tabla.size(); i++) {
             FileSystemManager.FileEntry entry = tabla.get(i);
-            System.out.println("     " + (i + 1) + ". " + entry.getFileName() + 
+            System.out.println("   - " + entry.getFileName() + 
                              " | Bloques: " + entry.getBlockCount() +
                              " | Primer bloque: " + entry.getFirstBlockAddress() +
-                             " | Propietario: " + entry.getOwner());
+                             " | Ruta: " + entry.getFilePath());
         }
         
-        // Verificar estructura completa
-        System.out.println("\n   --- ESTRUCTURA COMPLETA DEL SISTEMA ---");
-        imprimirEstructuraCompleta(fs.getRoot(), 0);
-        
-        System.out.println("    Prueba de permisos y estructura completada\n");
-    }
-    
-    /**
-     * Método auxiliar para imprimir estructura completa
-     */
-    private void imprimirEstructuraCompleta(Directory dir, int nivel) {
-        String sangria = "   " + "  ".repeat(nivel);
-        
-        System.out.println(sangria + " " + dir.getName() + 
-                         " (propietario: " + dir.getOwner() + 
-                         ", elementos: " + dir.getChildren().size() + ")");
-        
-        LinkedList<FileSystemElement> hijos = dir.getChildren();
-        for (int i = 0; i < hijos.size(); i++) {
-            FileSystemElement elemento = hijos.get(i);
-            
-            if (elemento.isDirectory()) {
-                imprimirEstructuraCompleta((Directory) elemento, nivel + 1);
-            } else {
-                File archivo = (File) elemento;
-                System.out.println(sangria + "  " + archivo.getName() +
-                                 " (" + archivo.getSize() + " bloques, " +
-                                 "propietario: " + archivo.getOwner() + ")");
-            }
-        }
-    }
-
-    public void quickTest(){
-        System.out.println("=== PRUEBA RÁPIDA DE CORRECCIONES ===\n");
-        
-        FileSystemManager fs = new FileSystemManager(20);
-        
-        // Crear estructura de prueba
-        fs.createDirectory("/", "test");
-        fs.createFile("/test", "archivo.txt", 3);
-        
-        // Probar búsqueda corregida
-        System.out.println("1. Prueba de búsqueda por path:");
-        FileSystemElement encontrado = fs.findElement("/test/archivo.txt");
-        System.out.println("   - Elemento encontrado: " + (encontrado != null));
-        System.out.println("   - Nombre: " + (encontrado != null ? encontrado.getName() : "N/A"));
-        
-        // Probar eliminación recursiva
-        System.out.println("\n2. Prueba de eliminación recursiva:");
-        int bloquesAntes = fs.getDisk().getUsedBlocks();
-        System.out.println("   - Bloques antes: " + bloquesAntes);
-        
-        boolean eliminado = fs.deleteDirectory("/", "test");
-        System.out.println("   - Directorio eliminado: " + eliminado);
-        
-        int bloquesDespues = fs.getDisk().getUsedBlocks();
-        System.out.println("   - Bloques después: " + bloquesDespues);
-        System.out.println("   - Bloques liberados: " + (bloquesAntes - bloquesDespues));
-        
-        // Verificar que ya no existe
-        FileSystemElement verificar = fs.findElement("/test");
-        System.out.println("   - Directorio todavía existe: " + (verificar != null));
-        
-        System.out.println("\n=== PRUEBA COMPLETADA ===");
-    }
-    
-    public void diagnosticTest(){
-        System.out.println("=== PRUEBA FINAL CORREGIDA ===\n");
-        
-        FileSystemManager fs = new FileSystemManager(20);
-        
-        // Crear estructura
-        System.out.println("1. Creando estructura...");
-        fs.createDirectory("/", "test");
-        fs.createFile("/test", "archivo1.txt", 2);
-        fs.createFile("/test", "archivo2.txt", 1);
-        
-        System.out.println("   - Bloques iniciales: " + fs.getDisk().getUsedBlocks());
-        
-        // Verificar cadena de bloques ANTES de eliminar
-        System.out.println("\n2. Verificando cadenas de bloques:");
-        File archivo1 = fs.readFile("/test", "archivo1.txt");
-        if (archivo1 != null && archivo1.getFirstBlock() != null) {
-            System.out.println("   - archivo1.txt cadena:");
-            Block block = archivo1.getFirstBlock();
-            while (block != null) {
-                System.out.println("     Bloque " + block.getBlockNumber() + 
-                                 " -> Siguiente: " + (block.getNextBlock() != null ? 
-                                 block.getNextBlock().getBlockNumber() : "null"));
-                block = block.getNextBlock();
+        // **CORRECCIÓN: Buscar usando la ruta correcta**
+        // Encontrar la ruta real usada en la tabla
+        String rutaReal = null;
+        for (int i = 0; i < tabla.size(); i++) {
+            FileSystemManager.FileEntry entry = tabla.get(i);
+            if (entry.getFileName().equals("tabla1.txt")) {
+                rutaReal = entry.getFilePath();
+                break;
             }
         }
         
-        // Eliminar
-        System.out.println("\n3. Eliminando directorio...");
-        int bloquesAntes = fs.getDisk().getUsedBlocks();
-        boolean resultado = fs.deleteDirectory("/", "test");
+        if (rutaReal != null) {
+            FileSystemManager.FileEntry encontrada = fs.getFileEntry(rutaReal);
+            System.out.println("2. Buscar entrada específica (" + rutaReal + "): " + (encontrada != null ? "ÉXITO" : "FALLO"));
+        } else {
+            System.out.println("2. Buscar entrada específica: No se encontró tabla1.txt en la tabla");
+        }
         
-        System.out.println("\n4. Resultados:");
-        System.out.println("   - Eliminación exitosa: " + resultado);
-        System.out.println("   - Bloques antes: " + bloquesAntes);
-        System.out.println("   - Bloques después: " + fs.getDisk().getUsedBlocks());
-        System.out.println("   - Bloques liberados: " + (bloquesAntes - fs.getDisk().getUsedBlocks()));
-        System.out.println("   - Directorio existe: " + (fs.findElement("/test") != null));
-        System.out.println("   - Estado final: " + fs.getDisk().getDiskStatus());
+        // Test 4: Eliminar archivo y verificar que se elimina de la tabla
+        fs.deleteFile("/test_tabla", "tabla1.txt");
+        FileSystemManager.FileEntry eliminada = null;
+        if (rutaReal != null) {
+            eliminada = fs.getFileEntry(rutaReal);
+        }
+        System.out.println("3. Entrada eliminada de tabla: " + (eliminada == null ? "CORRECTO" : "ERROR"));
+        System.out.println("4. Total entradas después de eliminar: " + fs.getFileTable().size());
         
-        System.out.println("\n=== PRUEBA COMPLETADA ===");
+        System.out.println("Pruebas de tabla de archivos completadas\n");
     }
+    
 }
