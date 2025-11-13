@@ -22,9 +22,9 @@ public class UserSession {
     public static final User DEFAULT_USER = new User("user", false, "/home/user");
     
     private UserSession() {
-        // Por defecto empezamos en modo usuario normal
+        // Por defecto empezamos en modo admin
         this.currentUser = DEFAULT_USER;
-        this.adminMode = false;
+        this.adminMode = true;
     }
     
     // ==================== MÉTODOS SINGLETON ====================

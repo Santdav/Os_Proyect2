@@ -57,6 +57,16 @@ public class FileSystemManager {
         
         // Configurar permisos del root como sistema (solo admin)
         root.getPermissions().setSystemPermissions();
+        
+        Directory homeDir = new Directory("home", "admin", root);
+
+        // Añadir 'home' como hijo del 'root'
+        root.addChild(homeDir);
+
+        // ==========================================================
+        // Opcional, crear /home/user para el usuario por defecto:
+        Directory userDir = new Directory("user", "user", homeDir);
+        homeDir.addChild(userDir);
     }
     
     // ==================== GESTIÓN DE USUARIOS Y PERMISOS ====================
@@ -90,23 +100,32 @@ public class FileSystemManager {
         }
 
         Directory parent = findDirectory(path);
+        System.out.println("path" + parent);
         if (parent == null) return false;
 
         if (parent.getChild(fileName) != null) {
+                    System.out.println("as");
+
             return false; // Ya existe
         }
 
         if (!disk.hasEnoughSpace(sizeInBlocks)) {
+                    System.out.println("block");
+
             return false;
         }
 
         LinkedList<Integer> freeBlocks = disk.findFreeBlocks(sizeInBlocks);
         if (freeBlocks.size() < sizeInBlocks) {
+                    System.out.println("bo");
+
             return false;
         }
 
         // CORRECCIÓN: Asignar los bloques al disco ANTES de usarlos
         if (!disk.allocateBlocks(freeBlocks, fileName)) {
+                    System.out.println("tin");
+
             return false;
         }
 
@@ -304,6 +323,7 @@ public class FileSystemManager {
             
             FileSystemElement element = current.getChild(part);
             if (element == null || !element.isDirectory()) {
+            System.out.println("caso 1 " + current + element);
                 return null;
             }
             
