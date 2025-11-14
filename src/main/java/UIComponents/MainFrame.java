@@ -438,65 +438,95 @@ public class MainFrame extends JFrame {
      *
      */
     public void showDeleteElementDialog() {
-        // Mostrar qué elementos existen actualmente
-        StringBuilder existingElements = new StringBuilder("Elementos en /root:\n");
-        Directory root = fileSystem.findDirectory("/root");
-        if (root != null) {
-            LinkedList<FileSystemElement> children = root.getChildren();
-            for (int i = 0; i < children.size(); i++) {
-                FileSystemElement child = children.get(i);
-                existingElements.append("- ").append(child.getName())
-                        .append(child.isDirectory() ? " [DIR]\n" : " [ARCHIVO]\n");
-            }
-        }
+        // Obtener la selección actual del árbol para pre-llenar
+        String defaultPath = getSelectedTreePath();
 
-        JTextField nameField = new JTextField();
+        // Mostrar estructura actual para referencia
+        StringBuilder structureInfo = new StringBuilder("Estructura actual:\n");
+        Directory rootDir = fileSystem.getRoot();
+
+        JTextField fullPathField = new JTextField(defaultPath);
 
         Object[] message = {
-            existingElements.toString(),
-            "Nombre del elemento a eliminar (solo en /root):",
-            nameField
+            structureInfo.toString(),
+            "Ruta COMPLETA del elemento a eliminar:",
+            fullPathField
         };
 
         int option = JOptionPane.showConfirmDialog(this, message,
                 "Eliminar Elemento", JOptionPane.OK_CANCEL_OPTION);
 
         if (option == JOptionPane.OK_OPTION) {
-            String name = nameField.getText().trim();
+            String fullPath = fullPathField.getText().trim();
 
-            System.out.println("DEBUG - Eliminar: /root/" + name);
+            System.out.println("=== DEBUG ELIMINACIÓN INICIO ===");
+            System.out.println("DEBUG - Ruta completa: '" + fullPath + "'");
 
-            // Buscar el elemento
-            FileSystemElement element = fileSystem.findElement("/root/" + name);
+            // CORREGIR: Normalizar la ruta - quitar /root extra si existe
+            if (fullPath.startsWith("/root/root/")) {
+                fullPath = fullPath.replaceFirst("/root/root/", "/root/");
+                System.out.println("DEBUG - Ruta corregida: '" + fullPath + "'");
+            }
+
+            // Encontrar el elemento por ruta completa
+            FileSystemElement element = fileSystem.findElement(fullPath);
             System.out.println("DEBUG - Elemento encontrado: " + (element != null));
 
+            if (element != null) {
+                System.out.println("DEBUG - Tipo: " + (element.isDirectory() ? "DIRECTORIO" : "ARCHIVO"));
+                System.out.println("DEBUG - Nombre: " + element.getName());
+                System.out.println("DEBUG - Dueño: " + element.getOwner());
+                System.out.println("DEBUG - Usuario actual: " + fileSystem.getCurrentUser());
+                System.out.println("DEBUG - Puede eliminar: " + fileSystem.canDelete(element));
+            }
+
             if (element == null) {
-                JOptionPane.showMessageDialog(this,
-                        "Elemento '" + name + "' no encontrado en /root\n"
-                        + existingElements.toString(),
-                        "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, 
+                    "Elemento no encontrado: " + fullPath + "\n\n" +
+                    "Ejemplos de rutas válidas:\n" +
+                    "- /root/mis_docuementos/archivo_prueba.txt\n" +
+                    "- /root/mis_docuementos\n" +
+                    "- /root/home/user",
+                    "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
+
+            // Extraer path y nombre para las operaciones de delete
+            int lastSlash = fullPath.lastIndexOf("/");
+            String parentPath = fullPath.substring(0, lastSlash);
+            String elementName = fullPath.substring(lastSlash + 1);
+
+            System.out.println("DEBUG - parentPath: '" + parentPath + "'");
+            System.out.println("DEBUG - elementName: '" + elementName + "'");
+
+            // Verificar que el directorio padre existe
+            Directory parentDir = fileSystem.findDirectory(parentPath);
+            System.out.println("DEBUG - Directorio padre encontrado: " + (parentDir != null));
 
             boolean success = false;
 
             if (element.isDirectory()) {
-                success = fileSystem.deleteDirectory("/root", name);
+                System.out.println("DEBUG - Ejecutando deleteDirectory...");
+                success = fileSystem.deleteDirectory(parentPath, elementName);
                 System.out.println("DEBUG - Resultado eliminar directorio: " + success);
             } else {
-                success = fileSystem.deleteFile("/root", name);
+                System.out.println("DEBUG - Ejecutando deleteFile...");
+                success = fileSystem.deleteFile(parentPath, elementName);
                 System.out.println("DEBUG - Resultado eliminar archivo: " + success);
             }
 
+            System.out.println("=== DEBUG ELIMINACIÓN FIN ===");
+
             if (success) {
-                JOptionPane.showMessageDialog(this,
-                        "Elemento '" + name + "' eliminado exitosamente");
+                JOptionPane.showMessageDialog(this, 
+                    "Elemento '" + elementName + "' eliminado exitosamente");
                 updateDisplay();
             } else {
-                JOptionPane.showMessageDialog(this,
-                        "Error al eliminar '" + name + "'\n"
-                        + "Si es directorio, verifique que esté vacío",
-                        "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, 
+                    "Error al eliminar '" + elementName + "'\n" +
+                    "Posibles causas:\n" +
+                    "- Sin permisos\n- Directorio no vacío\n- Error interno",
+                    "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -577,4 +607,22 @@ public class MainFrame extends JFrame {
             printTreeNodes(child, depth + 1);
         }
     }
+
+    private String getSelectedTreePath() {
+        TreePath selectionPath = fileTree.getSelectionPath();
+        if (selectionPath != null) {
+            StringBuilder path = new StringBuilder();
+            Object[] pathComponents = selectionPath.getPath();
+
+            for (int i = 0; i < pathComponents.length; i++) {
+                if (path.length() > 0) path.append("/");
+                path.append(pathComponents[i].toString());
+            }
+
+            return path.toString();
+        }
+
+        return "/root"; // Ruta por defecto
+    }
+
 }
