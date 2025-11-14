@@ -18,6 +18,8 @@ public class Os_Proyect2 {
 
     public static void main(String[] args) {
         
+        ProcessManagerTest.runTests();
+        
         //var fsTest = new FileSystemTest();
         //fsTest.runAllTests();
 

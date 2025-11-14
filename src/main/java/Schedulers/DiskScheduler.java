@@ -3,7 +3,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Interface.java to edit this template
  */
 package Schedulers;
-import DataStructures.Queue;
+import DataStructures.LinkedList;
 import LogicalStrucures.Process;
 /**
  *
@@ -14,27 +14,12 @@ import LogicalStrucures.Process;
  * Interfaz para los algoritmos de planificación de disco.
  * Define el método para seleccionar el próximo proceso a ejecutar.
  */
+/**
+ * Interfaz para los algoritmos de planificación de disco.
+ * Ahora trabaja con IORequest en lugar de Process.
+ */
 public interface DiskScheduler {
-    
-    /**
-     * 
-     * @param readyQueue 
-     * @return
-     */
-    Process selectNextProcess(Queue<Process> readyQueue);
-    
-    /**
-     * Retorna el nombre del algoritmo de planificación.
-     * 
-     * @return Nombre descriptivo del algoritmo
-     */
+    Process selectNextProcess(LinkedList<Process> requestQueue);
     String getAlgorithmName();
-    
-    /**
-     * Retorna una descripción del algoritmo de planificación.
-     * 
-     * @return Descripción del algoritmo
-     */
     String getAlgorithmDescription();
-
 }

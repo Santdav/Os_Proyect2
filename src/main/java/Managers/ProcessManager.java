@@ -3,10 +3,11 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package Managers;
-import DataStructures.Queue;
+import LogicalStrucures.File;
 import LogicalStrucures.Process;
 import Schedulers.DiskScheduler;
 import Schedulers.FIFOScheduler;
+import DataStructures.LinkedList;
 /**
  *
  * @author santi
@@ -17,259 +18,330 @@ import Schedulers.FIFOScheduler;
 /**
  * Gestiona todos los procesos del sistema, incluyendo colas y transiciones de estado.
  */
-public class ProcessManager {
-    
-    // ==================== COLAS DE PROCESOS ====================
-    
-    private Queue<Process> newQueue;        // Procesos nuevos
-    private Queue<Process> readyQueue;      // Procesos listos para ejecutar
-    private Queue<Process> runningQueue;    // Procesos en ejecución
-    private Queue<Process> blockedQueue;    // Procesos bloqueados por E/S
-    private Queue<Process> exitQueue; // Procesos terminados
-    
-    private int nextProcessId;
-    private DiskScheduler diskScheduler;
-    
-    // ==================== CONSTRUCTOR ====================
-    
-    public ProcessManager() {
-    this.newQueue = new Queue<>();
-    this.readyQueue = new Queue<>();
-    this.runningQueue = new Queue<>();
-    this.blockedQueue = new Queue<>();
-    this.exitQueue = new Queue<>();
-    this.nextProcessId = 1;
-    
-    // Usar FIFOScheduler por defecto
-    this.diskScheduler = new FIFOScheduler();
-}
-    
-    // ==================== CREACIÓN DE PROCESOS ====================
-    
-    /**
-     * Crea un nuevo proceso para operación con archivo
-     */
-    public Process createFileProcess(String owner, Process.IOOperation operation, 
-                                    String filePath, String fileName, int fileSize) {
-        Process process = new Process(nextProcessId++, owner, operation, filePath, fileName, fileSize);
-        newQueue.enqueue(process);
-        return process;
-    }
-    
-    /**
-     * Crea un nuevo proceso para operación con directorio
-     */
-    public Process createDirectoryProcess(String owner, Process.IOOperation operation, 
-                                        String dirPath, String dirName) {
-        Process process = new Process(nextProcessId++, owner, operation, dirPath, dirName);
-        newQueue.enqueue(process);
-        return process;
-    }
-    
-    /**
-     * Crea un nuevo proceso para operación de lectura/actualización
-     */
-    public Process createFileAccessProcess(String owner, Process.IOOperation operation, 
-                                         String fullPath) {
-        Process process = new Process(nextProcessId++, owner, operation, fullPath);
-        newQueue.enqueue(process);
-        return process;
-    }
-    
-    // ==================== TRANSICIONES DE ESTADO ====================
-    
-    /**
-     * Mueve procesos nuevos a la cola de listos
-     */
-    public void admitNewProcesses() {
-        while (!newQueue.isEmpty()) {
-            Process process = newQueue.dequeue();
-            process.setState(Process.ProcessState.READY);
-            readyQueue.enqueue(process);
-        }
-    }
-    
-    /**
-     * Selecciona el próximo proceso a ejecutar (FIFO básico por ahora)
-     */
-    public Process scheduleNextProcess() {
-        if (readyQueue.isEmpty()) {
-            return null;
-        }
 
-        Process nextProcess = diskScheduler.selectNextProcess(readyQueue);
-        if (nextProcess != null) {
-            nextProcess.setState(Process.ProcessState.RUNNING);
-            runningQueue.enqueue(nextProcess);
-        }
-        return nextProcess;
-}
+/**
+ * Gestiona los procesos y la cola de solicitudes de E/S del sistema
+ */
+
+
+/**
+ * Gestiona los procesos y la cola de solicitudes de E/S del sistema
+ * Versión corregida para trabajar con tu implementación de Process
+ */
+public class ProcessManager {
+    private LinkedList<Process> allProcesses;
+    private LinkedList<Process> readyQueue;
+    private LinkedList<Process> blockedQueue;
+    private LinkedList<Process> terminatedProcesses;
+    
+    private LinkedList<Process> ioRequestQueue; // Cambiado a Process en lugar de IORequest
+    private DiskScheduler diskScheduler;
+    private FileSystemManager fileSystem;
+    
+    // Contador para IDs de proceso
+    private int nextProcessId;
+    
+    // Métricas del sistema
+    private int totalRequestsProcessed;
+    private long totalWaitTime;
+    private long totalProcessingTime;
+    
+    public ProcessManager(FileSystemManager fileSystem) {
+        this.fileSystem = fileSystem;
+        this.allProcesses = new LinkedList<>();
+        this.readyQueue = new LinkedList<>();
+        this.blockedQueue = new LinkedList<>();
+        this.terminatedProcesses = new LinkedList<>();
+        this.ioRequestQueue = new LinkedList<>();
+        
+        // Por defecto usamos FIFO
+        this.diskScheduler = new FIFOScheduler();
+        
+        this.nextProcessId = 1;
+        this.totalRequestsProcessed = 0;
+        this.totalWaitTime = 0;
+        this.totalProcessingTime = 0;
+    }
+    
+    // ==================== GESTIÓN DE PROCESOS ====================
     
     /**
-     * Bloquea un proceso (cuando necesita E/S)
+     * Crea un proceso usando TU implementación de Process
      */
-    public void blockProcess(Process process) {
-        if (runningQueue.remove(process)) {
-            process.setState(Process.ProcessState.BLOCKED);
-            blockedQueue.enqueue(process);
-        }
+    public Process createProcess(String owner, Process.IOOperation operation, 
+                                String filePath, String fileName, int fileSize) {
+        Process process = new Process(nextProcessId++, owner, operation, filePath, fileName, fileSize);
+        allProcesses.add(process);
+        moveToReady(process);
+        return process;
     }
     
     /**
-     * Desbloquea un proceso (cuando termina E/S)
+     * Crea un proceso para operaciones con directorios
      */
-    public void unblockProcess(Process process) {
-        if (blockedQueue.remove(process)) {
-            process.setState(Process.ProcessState.READY);
-            readyQueue.enqueue(process);
-        }
+    public Process createProcess(String owner, Process.IOOperation operation, 
+                                String dirPath, String dirName) {
+        Process process = new Process(nextProcessId++, owner, operation, dirPath, dirName);
+        allProcesses.add(process);
+        moveToReady(process);
+        return process;
     }
     
     /**
-     * Termina un proceso
+     * Crea un proceso para operaciones de lectura/actualización
      */
+    public Process createProcess(String owner, Process.IOOperation operation, String fullPath) {
+        Process process = new Process(nextProcessId++, owner, operation, fullPath);
+        allProcesses.add(process);
+        moveToReady(process);
+        return process;
+    }
+    
+    public void moveToReady(Process process) {
+        if (blockedQueue.contains(process)) {
+            blockedQueue.remove(process);
+        }
+        if (!readyQueue.contains(process)) {
+            readyQueue.add(process);
+        }
+        process.setState(Process.ProcessState.READY);
+    }
+    
+    public void moveToBlocked(Process process) {
+        if (readyQueue.contains(process)) {
+            readyQueue.remove(process);
+        }
+        if (!blockedQueue.contains(process)) {
+            blockedQueue.add(process);
+        }
+        process.setState(Process.ProcessState.BLOCKED);
+    }
+    
     public void terminateProcess(Process process) {
-        if (runningQueue.remove(process)) {
-            process.setState(Process.ProcessState.EXIT);
-            exitQueue.enqueue(process);
+        if (readyQueue.contains(process)) {
+            readyQueue.remove(process);
+        }
+        if (blockedQueue.contains(process)) {
+            blockedQueue.remove(process);
+        }
+        if (!terminatedProcesses.contains(process)) {
+            terminatedProcesses.add(process);
+        }
+        process.setState(Process.ProcessState.EXIT);
+    }
+    
+    // ==================== GESTIÓN DE SOLICITUDES E/S ====================
+    
+    /**
+     * Envía un proceso a la cola de E/S para ser procesado
+     */
+    public void submitIORequest(Process process) {
+        if (!ioRequestQueue.contains(process)) {
+            ioRequestQueue.add(process);
+        }
+        
+        // El proceso se bloquea esperando la E/S
+        moveToBlocked(process);
+        
+        System.out.println("DEBUG ProcessManager - Proceso enviado a cola E/S: " + process.getOperationDescription());
+    }
+    
+    /**
+     * Procesa la siguiente solicitud en la cola de E/S
+     */
+    public void processNextIORequest() {
+        if (ioRequestQueue.isEmpty()) {
+            System.out.println("DEBUG - No hay procesos en cola E/S");
+            return;
+        }
+        
+        System.out.println("DEBUG - Procesando siguiente solicitud E/S. Cola: " + ioRequestQueue.size());
+        
+        try {
+            // El planificador decide cuál proceso atender
+            Process nextProcess = diskScheduler.selectNextProcess(ioRequestQueue);
+            
+            if (nextProcess != null) {
+                // Remover de la cola
+                ioRequestQueue.remove(nextProcess);
+                
+                // Procesar la operación del proceso
+                processIOOperation(nextProcess);
+            }
+        } catch (Exception e) {
+            System.out.println("ERROR en processNextIORequest: " + e.getMessage());
+            e.printStackTrace();
         }
     }
     
     /**
-     * Termina un proceso por ID
+     * Ejecuta la operación de E/S del proceso
      */
-    public boolean terminateProcess(int processId) {
-        // Buscar en runningQueue
-        for (int i = 0; i < runningQueue.size(); i++) {
-            Process process = runningQueue.get(i);
-            if (process.getProcessId() == processId) {
-                terminateProcess(process);
-                return true;
+    private void processIOOperation(Process process) {
+        process.setState(Process.ProcessState.RUNNING);
+        long startTime = System.currentTimeMillis();
+        
+        System.out.println("DEBUG ProcessManager - Procesando: " + process.getOperationDescription());
+        
+        boolean success = false;
+        String errorMessage = "";
+        
+        try {
+            switch (process.getOperation()) {
+                case CREATE_FILE:
+                    success = fileSystem.createFile(
+                        process.getFilePath(), 
+                        process.getFileName(), 
+                        process.getFileSize()
+                    );
+                    break;
+                    
+                case READ_FILE:
+                    File file = fileSystem.readFile(process.getFilePath(), process.getFileName());
+                    if (file != null) {
+                        process.setTargetFile(file);
+                        success = true;
+                    } else {
+                        errorMessage = "Archivo no encontrado o sin permisos";
+                    }
+                    break;
+                    
+                case UPDATE_FILE:
+                    // Para UPDATE necesitaríamos contenido, pero Process no lo tiene
+                    // Por ahora simulamos éxito
+                    success = fileSystem.updateFile(
+                        process.getFilePath(), 
+                        process.getFileName(), 
+                        "Contenido actualizado por proceso"
+                    );
+                    break;
+                    
+                case DELETE_FILE:
+                    success = fileSystem.deleteFile(process.getFilePath(), process.getFileName());
+                    break;
+                    
+                case CREATE_DIR:
+                    success = fileSystem.createDirectory(process.getFilePath(), process.getFileName());
+                    break;
+                    
+                case DELETE_DIR:
+                    success = fileSystem.deleteDirectory(process.getFilePath(), process.getFileName());
+                    break;
             }
+            
+        } catch (Exception e) {
+            errorMessage = e.getMessage();
+            success = false;
         }
-        return false;
+        
+        long endTime = System.currentTimeMillis();
+        
+        // Actualizar el proceso
+        process.setOperationSuccess(success);
+        if (!success && !errorMessage.isEmpty()) {
+            process.setErrorMessage(errorMessage);
+        }
+        
+        // Actualizar métricas
+        totalRequestsProcessed++;
+        totalProcessingTime += (endTime - startTime);
+        
+        if (success) {
+            System.out.println("DEBUG ProcessManager - Operación completada: " + process.getOperationDescription());
+            terminateProcess(process);
+        } else {
+            System.out.println("DEBUG ProcessManager - Operación falló: " + process.getOperationDescription());
+            // Podríamos reintentar o terminar con error
+            terminateProcess(process);
+        }
     }
+    
+    // ==================== CONFIGURACIÓN ====================
     
     public void setDiskScheduler(DiskScheduler scheduler) {
         this.diskScheduler = scheduler;
+        System.out.println("DEBUG ProcessManager - Planificador cambiado a: " + scheduler.getAlgorithmName());
+    }
+    
+    // ==================== MÉTRICAS ====================
+    
+    public int getTotalRequestsProcessed() {
+        return totalRequestsProcessed;
+    }
+    
+    public double getAverageProcessingTime() {
+        return totalRequestsProcessed > 0 ? (double) totalProcessingTime / totalRequestsProcessed : 0;
+    }
+    
+    public int getPendingRequestsCount() {
+        return ioRequestQueue.size();
+    }
+    
+    public int getReadyProcessesCount() {
+        return readyQueue.size();
+    }
+    
+    public int getBlockedProcessesCount() {
+        return blockedQueue.size();
+    }
+    
+    public int getTerminatedProcessesCount() {
+        return terminatedProcesses.size();
+    }
+    
+    // ==================== GETTERS PARA UI ====================
+    
+    public LinkedList<Process> getAllProcesses() {
+        return allProcesses;
+    }
+    
+    public LinkedList<Process> getReadyQueue() {
+        return readyQueue;
+    }
+    
+    public LinkedList<Process> getBlockedQueue() {
+        return blockedQueue;
+    }
+    
+    public LinkedList<Process> getTerminatedProcesses() {
+        return terminatedProcesses;
+    }
+    
+    public LinkedList<Process> getIORequestQueue() {
+        return ioRequestQueue;
     }
     
     public DiskScheduler getDiskScheduler() {
         return diskScheduler;
     }
     
-    
-    
-    // ==================== MÉTODOS DE CONSULTA ====================
-    
-    public Queue<Process> getNewProcesses() {
-        return newQueue;
-    }
-    
-    public Queue<Process> getReadyProcesses() {
-        return readyQueue;
-    }
-    
-    public Queue<Process> getRunningProcesses() {
-        return runningQueue;
-    }
-    
-    public Queue<Process> getBlockedProcesses() {
-        return blockedQueue;
-    }
-    
-    public Queue<Process> getTerminatedProcesses() {
-        return exitQueue;
-    }
-    
-    public int getTotalProcesses() {
-        return newQueue.size() + readyQueue.size() + runningQueue.size() + 
-               blockedQueue.size() + exitQueue.size();
-    }
-    
-    public Process getProcessById(int processId) {
-        // Buscar en todas las colas
-        for (int i = 0; i < newQueue.size(); i++) {
-            if (newQueue.get(i).getProcessId() == processId) return newQueue.get(i);
-        }
-        for (int i = 0; i < readyQueue.size(); i++) {
-            if (readyQueue.get(i).getProcessId() == processId) return readyQueue.get(i);
-        }
-        for (int i = 0; i < runningQueue.size(); i++) {
-            if (runningQueue.get(i).getProcessId() == processId) return runningQueue.get(i);
-        }
-        for (int i = 0; i < blockedQueue.size(); i++) {
-            if (blockedQueue.get(i).getProcessId() == processId) return blockedQueue.get(i);
-        }
-        for (int i = 0; i < exitQueue.size(); i++) {
-            if (exitQueue.get(i).getProcessId() == processId) return exitQueue.get(i);
-        }
-        return null;
-    }
-    
-    // ==================== MÉTODOS DE SIMULACIÓN ====================
-    
-    /**
-     * Ejecuta un ciclo completo del planificador
-     */
-    public void runSchedulerCycle() {
-        // 1. Admitir nuevos procesos
-        admitNewProcesses();
-        
-        // 2. Si no hay procesos en ejecución, planificar uno
-        if (runningQueue.isEmpty()) {
-            scheduleNextProcess();
-        }
-        
-        // 3. Verificar procesos bloqueados (simular finalización de E/S)
-        checkBlockedProcesses();
-    }
-    
-    /**
-     * Simula la finalización de operaciones E/S para algunos procesos bloqueados
-     */
-    private void checkBlockedProcesses() {
-        // En una simulación real, aquí verificarías qué procesos han terminado E/S
-        // Por ahora, simulamos desbloqueando aleatoriamente algunos procesos
-        if (!blockedQueue.isEmpty()) {
-            // Desbloquear el primer proceso como simulación
-            Process process = blockedQueue.dequeue();
-            unblockProcess(process);
-        }
-    }
-    
-    // ==================== MÉTODOS DE INFORMACIÓN ====================
-    
-    public String getQueueStatus() {
-        return String.format("Procesos: NEW(%d) READY(%d) RUNNING(%d) BLOCKED(%d) TERMINATED(%d)",
-            newQueue.size(), readyQueue.size(), runningQueue.size(), 
-            blockedQueue.size(), exitQueue.size()
+    public String getManagerStatus() {
+        return String.format(
+            "Procesos: %d Listos, %d Bloqueados, %d Terminados | Solicitudes E/S: %d Pendientes",
+            readyQueue.size(), blockedQueue.size(), terminatedProcesses.size(), ioRequestQueue.size()
         );
     }
     
-    @Override
-    public String toString() {
-        return getQueueStatus();
+    /**
+     * Método de conveniencia para crear procesos desde la GUI
+     */
+    public Process createFileProcess(String filePath, String fileName, int fileSize) {
+        String owner = fileSystem.getCurrentUser();
+        return createProcess(owner, Process.IOOperation.CREATE_FILE, filePath, fileName, fileSize);
     }
     
-    // ==================== MÉTODOS DE LIMPIEZA ====================
-    
-    /**
-     * Limpia los procesos terminados (para liberar memoria)
-     */
-    public void clearTerminatedProcesses() {
-        exitQueue.clear();
+    public Process createReadProcess(String filePath, String fileName) {
+        String owner = fileSystem.getCurrentUser();
+        return createProcess(owner, Process.IOOperation.READ_FILE, filePath, fileName, 0);
     }
     
-    /**
-     * Reinicia el ProcessManager
-     */
-    public void reset() {
-        newQueue.clear();
-        readyQueue.clear();
-        runningQueue.clear();
-        blockedQueue.clear();
-        exitQueue.clear();
-        nextProcessId = 1;
+    public Process createDeleteFileProcess(String filePath, String fileName) {
+        String owner = fileSystem.getCurrentUser();
+        return createProcess(owner, Process.IOOperation.DELETE_FILE, filePath, fileName, 0);
+    }
+    
+    public Process createDirectoryProcess(String dirPath, String dirName) {
+        String owner = fileSystem.getCurrentUser();
+        return createProcess(owner, Process.IOOperation.CREATE_DIR, dirPath, dirName);
     }
 }

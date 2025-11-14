@@ -12,21 +12,18 @@ import DataStructures.FileSystemElement;
 import DataStructures.LinkedList;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import javax.swing.tree.*;
 import DataStructures.UserSession;
 import LogicalStrucures.Directory;
 import Managers.FileSystemManager;
+import Managers.ProcessManager;
+import Schedulers.*;
 /**
  * Ventana principal del sistema de archivos - Versión integrable Diseñada para
  * ser instanciada desde tu main principal existente
  */
-import javax.swing.*;
 import javax.swing.tree.DefaultTreeModel;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+
 
 /**
  * Ventana principal del Sistema de Archivos Implementa la interfaz gráfica
@@ -35,7 +32,10 @@ import java.awt.event.ActionListener;
 public class MainFrame extends JFrame {
 
     private FileSystemManager fileSystem;
+    private ProcessManager processManager;
     private UserSession userSession;
+    
+    private Timer updateTimer;
 
     // Componentes de la interfaz
     private JTree fileTree;
@@ -53,6 +53,7 @@ public class MainFrame extends JFrame {
     public MainFrame(FileSystemManager fileSystem) {
         this.fileSystem = fileSystem;
         this.userSession = UserSession.getInstance();
+        this.processManager = new ProcessManager(fileSystem);
 
         initializeComponents();
         setupTreeRenderer();
@@ -80,32 +81,45 @@ public class MainFrame extends JFrame {
         JScrollPane tableScrollPane = new JScrollPane(allocationTable);
         tableScrollPane.setBorder(BorderFactory.createTitledBorder("Tabla de Asignación de Archivos"));
 
-        // Panel de disco (simplificado por ahora)
+        // ✅ Panel de disco MEJORADO - Ahora es funcional
         diskPanel = new DiskPanel(fileSystem.getDisk());
-        diskPanel.setBorder(BorderFactory.createTitledBorder("Simulación de Disco"));
-        diskPanel.setLayout(new BorderLayout());
-        diskPanel.add(new JLabel("Visualización de bloques del disco - En desarrollo", JLabel.CENTER), BorderLayout.CENTER);
 
-        // Panel de procesos
-        processPanel = new JPanel();
-        processPanel.setBorder(BorderFactory.createTitledBorder("Cola de Procesos"));
-        processPanel.setLayout(new BorderLayout());
-        processPanel.add(new JLabel("Gestión de procesos - En desarrollo", JLabel.CENTER), BorderLayout.CENTER);
+        // ✅ Panel de procesos MEJORADO - Ahora es funcional
+        processPanel = new ProcessPanel( processManager); // Necesitarás crear ProcessManager
+
+        // Si no tienes ProcessManager aún, usa esta versión temporal:
+        if (processManager == null) {
+            processPanel = createTemporaryProcessPanel();
+        }
 
         // Selector de planificador
-        schedulerComboBox = new JComboBox<>(new String[]{
-            "FIFO", "SSTF", "SCAN", "C-SCAN"
-        });
+        schedulerComboBox = new JComboBox<>(new String[]{"FIFO", "SSTF", "SCAN", "C-SCAN"});
 
         // Selector de modo de usuario
-        userModeComboBox = new JComboBox<>(new String[]{
-            "Modo Administrador", "Modo Usuario"
-        });
-        userModeComboBox.setSelectedIndex(0); // Admin por defecto
+        userModeComboBox = new JComboBox<>(new String[]{"Modo Administrador", "Modo Usuario"});
+        userModeComboBox.setSelectedIndex(0);
 
         // Barra de estado
         statusLabel = new JLabel();
         updateStatusBar();
+    }
+    
+    private JPanel createTemporaryProcessPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createTitledBorder("Gestión de Procesos"));
+
+        JTextArea infoArea = new JTextArea();
+        infoArea.setEditable(false);
+        infoArea.setText("Sistema de Procesos - Próxima Implementación\n\n" +
+                        "Funcionalidades planificadas:\n" +
+                        "• Creación de procesos de E/S\n" +
+                        "• Estados: Nuevo, Listo, Ejecutando, Bloqueado\n" +
+                        "• Cola de solicitudes de disco\n" +
+                        "• Planificación con FIFO, SSTF, SCAN, C-SCAN");
+        infoArea.setBackground(new Color(250, 250, 250));
+
+        panel.add(new JScrollPane(infoArea), BorderLayout.CENTER);
+        return panel;
     }
 
     private void setupLayout() {
@@ -162,6 +176,30 @@ public class MainFrame extends JFrame {
             } else {
                 userSession.loginAsUser("usuario");
             }
+            updateStatusBar();
+            updateDisplay();
+        });
+
+        schedulerComboBox.addActionListener(e -> {
+            String selected = (String) schedulerComboBox.getSelectedItem();
+            int diskSize = fileSystem.getDisk().getTotalBlocks();
+
+            switch (selected) {
+                case "FIFO":
+                    processManager.setDiskScheduler(new FIFOScheduler());
+                    break;
+                case "SSTF":
+                    processManager.setDiskScheduler(new SSTFScheduler());
+                    break;
+                case "SCAN":
+                    processManager.setDiskScheduler(new SCANScheduler(diskSize));
+                    break;
+                case "C-SCAN":
+                    processManager.setDiskScheduler(new CSCANScheduler(diskSize));
+                    break;
+            }
+
+            System.out.println("DEBUG MainFrame - Planificador cambiado a: " + selected);
             updateStatusBar();
             updateDisplay();
         });
@@ -266,10 +304,14 @@ public class MainFrame extends JFrame {
     }
 
     private void updateStatusBar() {
-        String status = fileSystem.getSystemStatus() + " | "
-                + "Planificador: " + schedulerComboBox.getSelectedItem();
-        statusLabel.setText(status);
-    }
+    String schedulerInfo = processManager.getDiskScheduler().getAlgorithmName();
+    String processInfo = processManager.getManagerStatus();
+    
+    String status = fileSystem.getSystemStatus() + " | " + 
+                   "Planificador: " + schedulerInfo + " | " +
+                   processInfo;
+    statusLabel.setText(status);
+}
 
     public void updateDisplay() {
         // Actualizar el árbol de archivos
@@ -281,6 +323,11 @@ public class MainFrame extends JFrame {
         // Actualizar visualización del disco
         if (diskPanel instanceof DiskPanel) {
             ((DiskPanel) diskPanel).updateDisplay();
+        }
+
+        // ✅ Actualizar panel de procesos
+        if (processPanel instanceof ProcessPanel) {
+            ((ProcessPanel) processPanel).updateDisplay();
         }
 
         // Actualizar barra de estado
@@ -436,6 +483,12 @@ public class MainFrame extends JFrame {
                 return "/" + String.join("/", pathParts.toString());
             }
         });
+    }
+    
+    private void startAutoUpdate() {
+        // Actualizar cada 2 segundos automáticamente
+        updateTimer = new Timer(2000, e -> updateDisplay());
+        updateTimer.start();
     }
 
     /**

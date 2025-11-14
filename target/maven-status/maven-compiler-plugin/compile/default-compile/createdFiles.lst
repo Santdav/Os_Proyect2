@@ -3,13 +3,16 @@ Schedulers\SCANScheduler.class
 LogicalStrucures\Process.class
 UIComponents\DiskPanel.class
 LogicalStrucures\File.class
+UIComponents\ProcessPanel.class
 DataStructures\LinkedList$LinkedListIterator.class
 LogicalStrucures\Permissions.class
+LogicalStrucures\IOOperationType.class
 DataStructures\Block.class
 UIComponents\DiskPanel$1.class
+LogicalStrucures\IORequest$RequestState.class
 UIComponents\MainFrame$1.class
-Testing\DiskSchedulerTest.class
 Managers\FileSystemManager$FileEntry.class
+LogicalStrucures\IORequest.class
 Schedulers\SSTFScheduler.class
 com\goats\os_proyect2\Os_Proyect2.class
 Testing\ProcessTest.class
@@ -32,3 +35,4 @@ Schedulers\FIFOScheduler.class
 Testing\ProcessManagerTest.class
 Managers\FileSystemManager.class
 DataStructures\FileSystemElement.class
+Managers\ProcessManager$1.class

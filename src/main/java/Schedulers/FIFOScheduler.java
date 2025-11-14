@@ -3,7 +3,9 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package Schedulers;
+import DataStructures.LinkedList;
 import DataStructures.Queue;
+import LogicalStrucures.IORequest;
 import LogicalStrucures.Process;
 /**
  *
@@ -18,13 +20,17 @@ import LogicalStrucures.Process;
 public class FIFOScheduler implements DiskScheduler {
     
     @Override
-    public Process selectNextProcess(Queue<Process> readyQueue) {
-        if (readyQueue == null || readyQueue.isEmpty()) {
+    public Process selectNextProcess(LinkedList<Process> requestQueue) {
+        if (requestQueue.isEmpty()) {
             return null;
         }
         
-        // FIFO simplemente toma el primer proceso de la cola
-        return readyQueue.dequeue();
+        // FIFO: siempre toma la primera solicitud que llegó
+        Process nextProcess = requestQueue.get(0);
+        System.out.println("DEBUG FIFO - Procesando: " + nextProcess.getProcessId() + 
+                          " - " + nextProcess.getOperationDescription());
+        
+        return nextProcess;
     }
     
     @Override
@@ -34,12 +40,6 @@ public class FIFOScheduler implements DiskScheduler {
     
     @Override
     public String getAlgorithmDescription() {
-        return "Selecciona procesos en el orden de llegada. " +
-               "El primer proceso en entrar a la cola es el primero en ser ejecutado.";
-    }
-    
-    @Override
-    public String toString() {
-        return getAlgorithmName();
+        return "Atiende las solicitudes en el orden exacto de llegada";
     }
 }
