@@ -305,45 +305,135 @@ public class FileSystemManager {
 
     // ==================== BÚSQUEDA Y NAVEGACIÓN ====================
     public Directory findDirectory(String path) {
+        // Casos especiales: root
         if (path.equals("/") || path.isEmpty() || path.equals("/root")) {
             return root;
         }
-        
-        // Limpiar el path
+
+        System.out.println("DEBUG findDirectory - Búsqueda de: '" + path + "'");
+
+        // Normalizar la ruta: quitar / inicial si existe
         String cleanPath = path.startsWith("/") ? path.substring(1) : path;
         if (cleanPath.endsWith("/")) {
             cleanPath = cleanPath.substring(0, cleanPath.length() - 1);
         }
-        
-        String[] parts = cleanPath.split("/");
-        Directory current = root;
-        
-        for (String part : parts) {
-            if (part.isEmpty()) continue;
-            
-            FileSystemElement element = current.getChild(part);
-            if (element == null || !element.isDirectory()) {
-            System.out.println("caso 1 " + current + element);
-                return null;
-            }
-            
-            // Verificar permisos de lectura para el directorio
-            if (!userSession.canRead(element)) {
-                System.out.println("DEBUG: Sin permisos de lectura para directorio: " + part);
-                return null;
-            }
-            
-            current = (Directory) element;
+
+        System.out.println("DEBUG findDirectory - Ruta limpia: '" + cleanPath + "'");
+
+        // Si la ruta limpia es "root", retornar root
+        if (cleanPath.equals("root")) {
+            return root;
         }
-        
+
+        // Dividir la ruta en partes
+        String[] parts = cleanPath.split("/");
+        System.out.println("DEBUG findDirectory - Partes: " + java.util.Arrays.toString(parts));
+
+        Directory current = root;
+
+        // **CORRECCIÓN: Si la primera parte es "root", saltársela**
+        int startIndex = 0;
+        if (parts.length > 0 && parts[0].equals("root")) {
+            startIndex = 1;
+            System.out.println("DEBUG findDirectory - Saltando parte 'root' inicial");
+        }
+
+        // Si después de saltar "root" no quedan partes, retornar root
+        if (startIndex >= parts.length) {
+            return root;
+        }
+
+        for (int i = startIndex; i < parts.length; i++) {
+            String part = parts[i];
+            if (part.isEmpty()) {
+                continue;
+            }
+
+            System.out.println("DEBUG findDirectory - Buscando: '" + part + "' en '" + current.getName() + "'");
+
+            FileSystemElement element = current.getChild(part);
+
+            if (element == null) {
+                System.out.println("DEBUG findDirectory - Elemento no encontrado: '" + part + "'");
+                return null;
+            }
+
+            if (!element.isDirectory()) {
+                System.out.println("DEBUG findDirectory - No es directorio: '" + part + "'");
+                return null;
+            }
+
+            // Verificar permisos de lectura
+            if (!userSession.canRead(element)) {
+                System.out.println("DEBUG findDirectory - Sin permisos para: '" + part + "'");
+                return null;
+            }
+
+            current = (Directory) element;
+            System.out.println("DEBUG findDirectory - Avanzando a: '" + current.getName() + "'");
+        }
+
+        System.out.println("DEBUG findDirectory - Directorio encontrado: '" + current.getPath() + "'");
         return current;
     }
-    
+
     public FileSystemElement findElement(String path) {
-        FileSystemElement element = root.findElement(path);
-        if (element != null && !userSession.canRead(element)) {
-            return null; // Sin permisos de lectura
+        System.out.println("DEBUG findElement - Búsqueda de: '" + path + "'");
+
+        if (path.equals("/") || path.isEmpty() || path.equals("/root")) {
+            return root;
         }
+
+        // Normalizar ruta
+        String cleanPath = path.startsWith("/") ? path.substring(1) : path;
+        if (cleanPath.endsWith("/")) {
+            cleanPath = cleanPath.substring(0, cleanPath.length() - 1);
+        }
+
+        String[] parts = cleanPath.split("/");
+
+        // **CORRECCIÓN: Saltar "root" inicial si existe**
+        int startIndex = 0;
+        if (parts.length > 0 && parts[0].equals("root")) {
+            startIndex = 1;
+        }
+
+        // Si no hay más partes después de root, retornar root
+        if (startIndex >= parts.length) {
+            return root;
+        }
+
+        Directory current = root;
+
+        // Navegar hasta el directorio padre del elemento (todas las partes excepto la última)
+        for (int i = startIndex; i < parts.length - 1; i++) {
+            String part = parts[i];
+            if (part.isEmpty()) {
+                continue;
+            }
+
+            FileSystemElement element = current.getChild(part);
+            if (element == null || !element.isDirectory()) {
+                System.out.println("DEBUG findElement - Directorio intermedio no encontrado: '" + part + "'");
+                return null;
+            }
+
+            if (!userSession.canRead(element)) {
+                return null;
+            }
+
+            current = (Directory) element;
+        }
+
+        // Buscar el elemento final
+        String elementName = parts[parts.length - 1];
+        FileSystemElement element = current.getChild(elementName);
+
+        if (element != null && !userSession.canRead(element)) {
+            return null;
+        }
+
+        System.out.println("DEBUG findElement - Elemento encontrado: " + (element != null ? element.getName() : "null"));
         return element;
     }
     

@@ -16,10 +16,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import javax.swing.tree.*;
 import DataStructures.UserSession;
+import LogicalStrucures.Directory;
 import Managers.FileSystemManager;
 /**
- * Ventana principal del sistema de archivos - Versión integrable
- * Diseñada para ser instanciada desde tu main principal existente
+ * Ventana principal del sistema de archivos - Versión integrable Diseñada para
+ * ser instanciada desde tu main principal existente
  */
 import javax.swing.*;
 import javax.swing.tree.DefaultTreeModel;
@@ -28,13 +29,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 /**
- * Ventana principal del Sistema de Archivos
- * Implementa la interfaz gráfica requerida para el proyecto
+ * Ventana principal del Sistema de Archivos Implementa la interfaz gráfica
+ * requerida para el proyecto
  */
 public class MainFrame extends JFrame {
+
     private FileSystemManager fileSystem;
     private UserSession userSession;
-    
+
     // Componentes de la interfaz
     private JTree fileTree;
     private JTable allocationTable;
@@ -43,113 +45,115 @@ public class MainFrame extends JFrame {
     private JLabel statusLabel;
     private JComboBox<String> schedulerComboBox;
     private JComboBox<String> userModeComboBox;
-    
+
     // Paneles principales
     private JSplitPane mainSplitPane;
     private JSplitPane rightSplitPane;
-    
+
     public MainFrame(FileSystemManager fileSystem) {
         this.fileSystem = fileSystem;
         this.userSession = UserSession.getInstance();
-        
+
         initializeComponents();
+        setupTreeRenderer();
+        setupTreeSelectionListener();
         setupLayout();
         setupEventHandlers();
         updateDisplay();
-        
+
         setTitle("Sistema de Archivos - Simulador");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1200, 800);
         setLocationRelativeTo(null); // Centrar en pantalla
     }
-    
+
     private void initializeComponents() {
         // Árbol de archivos
         fileTree = new JTree();
         fileTree.setModel(createFileSystemTreeModel());
         JScrollPane treeScrollPane = new JScrollPane(fileTree);
         treeScrollPane.setBorder(BorderFactory.createTitledBorder("Estructura de Archivos"));
-        
+
         // Tabla de asignación
         allocationTable = new JTable();
         allocationTable.setModel(createAllocationTableModel());
         JScrollPane tableScrollPane = new JScrollPane(allocationTable);
         tableScrollPane.setBorder(BorderFactory.createTitledBorder("Tabla de Asignación de Archivos"));
-        
+
         // Panel de disco (simplificado por ahora)
         diskPanel = new JPanel();
         diskPanel.setBorder(BorderFactory.createTitledBorder("Simulación de Disco"));
         diskPanel.setLayout(new BorderLayout());
         diskPanel.add(new JLabel("Visualización de bloques del disco - En desarrollo", JLabel.CENTER), BorderLayout.CENTER);
-        
+
         // Panel de procesos
         processPanel = new JPanel();
         processPanel.setBorder(BorderFactory.createTitledBorder("Cola de Procesos"));
         processPanel.setLayout(new BorderLayout());
         processPanel.add(new JLabel("Gestión de procesos - En desarrollo", JLabel.CENTER), BorderLayout.CENTER);
-        
+
         // Selector de planificador
         schedulerComboBox = new JComboBox<>(new String[]{
             "FIFO", "SSTF", "SCAN", "C-SCAN"
         });
-        
+
         // Selector de modo de usuario
         userModeComboBox = new JComboBox<>(new String[]{
             "Modo Administrador", "Modo Usuario"
         });
         userModeComboBox.setSelectedIndex(0); // Admin por defecto
-        
+
         // Barra de estado
         statusLabel = new JLabel();
         updateStatusBar();
     }
-    
+
     private void setupLayout() {
         setLayout(new BorderLayout());
-        
+
         // Panel superior con controles
         JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         controlPanel.add(new JLabel("Planificador:"));
         controlPanel.add(schedulerComboBox);
         controlPanel.add(new JLabel("Modo:"));
         controlPanel.add(userModeComboBox);
-        
+
         // Botones de operaciones
         JButton createFileBtn = new JButton("Crear Archivo");
         JButton createDirBtn = new JButton("Crear Directorio");
         JButton deleteBtn = new JButton("Eliminar");
         JButton refreshBtn = new JButton("Actualizar");
-        
+
         controlPanel.add(createFileBtn);
         controlPanel.add(createDirBtn);
         controlPanel.add(deleteBtn);
         controlPanel.add(refreshBtn);
-        
+
         add(controlPanel, BorderLayout.NORTH);
-        
+
         // Panel principal dividido
         JPanel leftPanel = new JPanel(new BorderLayout());
         leftPanel.add(new JScrollPane(fileTree), BorderLayout.CENTER);
-        
+
         JPanel rightUpperPanel = new JPanel(new BorderLayout());
         rightUpperPanel.add(new JScrollPane(allocationTable), BorderLayout.CENTER);
-        
+
         JPanel rightLowerPanel = new JPanel(new GridLayout(1, 2));
         rightLowerPanel.add(diskPanel);
         rightLowerPanel.add(processPanel);
-        
+
         rightSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, rightUpperPanel, rightLowerPanel);
         rightSplitPane.setResizeWeight(0.5);
-        
+
         mainSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, rightSplitPane);
         mainSplitPane.setResizeWeight(0.3);
-        
+
         add(mainSplitPane, BorderLayout.CENTER);
-        
+
         // Barra de estado
         add(statusLabel, BorderLayout.SOUTH);
     }
-    
+
     private void setupEventHandlers() {
         userModeComboBox.addActionListener(e -> {
             boolean isAdmin = userModeComboBox.getSelectedIndex() == 0;
@@ -161,13 +165,13 @@ public class MainFrame extends JFrame {
             updateStatusBar();
             updateDisplay();
         });
-        
+
         // Listeners para los botones (implementación básica)
         JButton refreshBtn = findButton("Actualizar");
         if (refreshBtn != null) {
             refreshBtn.addActionListener(e -> updateDisplay());
         }
-        
+
         JButton createFileBtn = findButton("Crear Archivo");
         if (createFileBtn != null) {
             createFileBtn.addActionListener(e -> showCreateFileDialog()); // Llama al método existente
@@ -176,48 +180,56 @@ public class MainFrame extends JFrame {
         JButton createDirBtn = findButton("Crear Directorio");
         if (createDirBtn != null) {
             // Llama al nuevo método de diálogo que acabamos de añadir
-            createDirBtn.addActionListener(e -> showCreateDirDialog()); 
+            createDirBtn.addActionListener(e -> showCreateDirDialog());
         }
-        
+
         JButton deleteBtn = findButton("Eliminar"); // Usa tu método findButton(String text)
         if (deleteBtn != null) {
             deleteBtn.addActionListener(e -> showDeleteElementDialog());
         }
-        
+
     }
-    
+
     private JButton findButton(String text) {
-    // Buscar el botón con el texto dado en el panel de controles (asume que el panel de controles es el primer componente NORTH)
-    Component[] components = ((JPanel)getContentPane().getComponent(0)).getComponents();
-    for (Component comp : components) {
-        if (comp instanceof JButton && text.equals(((JButton)comp).getText())) {
-            return (JButton) comp;
-        }
-    }
-    return null;
-}
-    
-    private DefaultMutableTreeNode buildTreeModel(FileSystemElement element) {
-
-        // El nodo se llama con el nombre del elemento
-        DefaultMutableTreeNode node = new DefaultMutableTreeNode(element.getName());
-
-        // Si el elemento es un directorio, lo recorremos recursivamente
-        if (element.isDirectory()) {
-            // Hacemos un casting seguro al tipo Directory (asumiendo que existe)
-            LogicalStrucures.Directory dir = (LogicalStrucures.Directory) element;
-
-            // Iterar sobre los hijos del directorio
-            for (FileSystemElement child : dir.getChildren()) { // Asumo que getChildren() devuelve la lista de elementos
-                // Por cada hijo, construimos un sub-árbol recursivamente
-                node.add(buildTreeModel(child));
+        // Buscar el botón con el texto dado en el panel de controles (asume que el panel de controles es el primer componente NORTH)
+        Component[] components = ((JPanel) getContentPane().getComponent(0)).getComponents();
+        for (Component comp : components) {
+            if (comp instanceof JButton && text.equals(((JButton) comp).getText())) {
+                return (JButton) comp;
             }
         }
+        return null;
+    }
 
-        // Puedes diferenciar visualmente archivos de directorios si es necesario aquí
+    private DefaultMutableTreeNode buildTreeModel(FileSystemElement element) {
+        if (element == null) {
+            return new DefaultMutableTreeNode("null");
+        }
+
+        DefaultMutableTreeNode node = new DefaultMutableTreeNode(element.getName());
+
+        // VERIFICAR DIRECTAMENTE si es directorio usando el elemento real
+        if (element.isDirectory()) {
+            Directory dir = (Directory) element;
+            LinkedList<FileSystemElement> children = dir.getChildren();
+
+            // Si es directorio, procesar hijos (aunque esté vacío)
+            for (int i = 0; i < children.size(); i++) {
+                FileSystemElement child = children.get(i);
+                node.add(buildTreeModel(child));
+            }
+
+            // **AGREGAR ESTO: Si el directorio está vacío, agregar un nodo temporal**
+            // para que no aparezca como "leaf" en el árbol
+            if (children.isEmpty()) {
+                node.add(new DefaultMutableTreeNode("")); // Nodo vacío temporal
+            }
+        }
+        // Si es archivo, no hacer nada más (será leaf automáticamente)
+
         return node;
     }
-    
+
     private DefaultTreeModel createFileSystemTreeModel() {
 
         // Obtener el elemento raíz de tu sistema de archivos
@@ -228,7 +240,7 @@ public class MainFrame extends JFrame {
 
         return new DefaultTreeModel(rootNode);
     }
-    
+
     private javax.swing.table.TableModel createAllocationTableModel() {
         // Modelo de tabla básico - será reemplazado
         String[] columnNames = {"Archivo", "Ruta", "Bloques", "Primer Bloque", "Dueño", "Tamaño (B)"};
@@ -252,27 +264,27 @@ public class MainFrame extends JFrame {
         }
         return new javax.swing.table.DefaultTableModel(data, columnNames);
     }
-    
+
     private void updateStatusBar() {
-        String status = fileSystem.getSystemStatus() + " | " + 
-                       "Planificador: " + schedulerComboBox.getSelectedItem();
+        String status = fileSystem.getSystemStatus() + " | "
+                + "Planificador: " + schedulerComboBox.getSelectedItem();
         statusLabel.setText(status);
     }
-    
+
     public void updateDisplay() {
         // Actualizar el árbol de archivos
         fileTree.setModel(createFileSystemTreeModel());
-        
+
         // Actualizar la tabla de asignación
         allocationTable.setModel(createAllocationTableModel());
-        
+
         // Actualizar barra de estado
         updateStatusBar();
-        
+        debugTreeStructure();
         // TODO: Actualizar visualización del disco y procesos
         repaint();
     }
-    
+
     public void showCreateDirDialog() {
         // Campos de entrada
         JTextField nameField = new JTextField();
@@ -314,92 +326,255 @@ public class MainFrame extends JFrame {
             }
         }
     }
-    
+
     // Método para demostración - será expandido
     public void showCreateFileDialog() {
+        String defaultPath = "/root";
+
         JTextField nameField = new JTextField();
-        JTextField sizeField = new JTextField();
-        JTextField pathField = new JTextField("/root");
-        
+        JTextField sizeField = new JTextField("1");
+        JTextField pathField = new JTextField(defaultPath);
+
+        // Mensaje más informativo
+        JLabel helpLabel = new JLabel("<html>Ejemplos de rutas válidas:<br>" +
+                                     "- /root (directorio raíz)<br>" +
+                                     "- /root/home<br>" +
+                                     "- /root/home/user</html>");
+
         Object[] message = {
             "Nombre del archivo:", nameField,
             "Tamaño en bloques:", sizeField,
-            "Ruta:", pathField
+            "Ruta del directorio padre:", pathField,
+            helpLabel
         };
-        
+
         int option = JOptionPane.showConfirmDialog(this, message, 
             "Crear Archivo", JOptionPane.OK_CANCEL_OPTION);
-        
+
         if (option == JOptionPane.OK_OPTION) {
             try {
-                String name = nameField.getText();
-                int size = Integer.parseInt(sizeField.getText());
-                String path = pathField.getText();
-                
+                String name = nameField.getText().trim();
+                int size = Integer.parseInt(sizeField.getText().trim());
+                String path = pathField.getText().trim();
+
+                System.out.println("DEBUG - Intentando crear archivo: '" + name + "' en '" + path + "'");
+
                 boolean success = fileSystem.createFile(path, name, size);
+
                 if (success) {
-                    JOptionPane.showMessageDialog(this, "Archivo creado exitosamente");
+                    JOptionPane.showMessageDialog(this, 
+                        "Archivo '" + name + "' creado exitosamente en " + path,
+                        "Éxito", JOptionPane.INFORMATION_MESSAGE);
                     updateDisplay();
                 } else {
-                    
-                    JOptionPane.showMessageDialog(this, "Error al crear archivo", 
+                    JOptionPane.showMessageDialog(this, 
+                        "Error al crear archivo. Verifique:\n" +
+                        "- Que la ruta sea un directorio válido\n" +
+                        "- Que el nombre no exista\n" +
+                        "- Que haya espacio suficiente en disco\n" +
+                        "- Que tenga permisos de administrador",
                         "Error", JOptionPane.ERROR_MESSAGE);
                 }
             } catch (NumberFormatException e) {
-                JOptionPane.showMessageDialog(this, "Tamaño debe ser un número", 
+                JOptionPane.showMessageDialog(this, "El tamaño debe ser un número válido", 
                     "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
-    
+
+    private void setupTreeRenderer() {
+        fileTree.setCellRenderer(new DefaultTreeCellRenderer() {
+            @Override
+            public Component getTreeCellRendererComponent(JTree tree, Object value, 
+                    boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {
+
+                super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
+
+                DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
+
+                // **LÓGICA MEJORADA:** Usar tanto la información del árbol como del filesystem
+                boolean isDirectory = false;
+
+                // Método 1: Por estructura del árbol (si tiene hijos es directorio)
+                if (node.getChildCount() > 0) {
+                    isDirectory = true;
+                } 
+                // Método 2: Consultar el filesystem real como respaldo
+                else {
+                    String nodePath = buildPathFromNode(node);
+                    FileSystemElement element = fileSystem.findElement(nodePath);
+                    if (element != null) {
+                        isDirectory = element.isDirectory();
+                    }
+                }
+
+                if (isDirectory) {
+                    setIcon(UIManager.getIcon("FileView.directoryIcon"));
+                } else {
+                    setIcon(UIManager.getIcon("FileView.fileIcon"));
+                }
+
+                return this;
+            }
+
+            private String buildPathFromNode(DefaultMutableTreeNode node) {
+                if (node == null) return "";
+
+                // Reconstruir la ruta completa desde el root
+                var pathParts = new java.util.ArrayList<>();
+                DefaultMutableTreeNode current = node;
+
+                while (current != null) {
+                    pathParts.add(0, current.toString());
+                    current = (DefaultMutableTreeNode) current.getParent();
+                }
+
+                return "/" + String.join("/", pathParts.toString());
+            }
+        });
+    }
+
+    /**
+     *
+     */
     public void showDeleteElementDialog() {
-        // Usamos /root como valor predeterminado
-        JTextField pathField = new JTextField("/root");
+        // Mostrar qué elementos existen actualmente
+        StringBuilder existingElements = new StringBuilder("Elementos en /root:\n");
+        Directory root = fileSystem.findDirectory("/root");
+        if (root != null) {
+            LinkedList<FileSystemElement> children = root.getChildren();
+            for (int i = 0; i < children.size(); i++) {
+                FileSystemElement child = children.get(i);
+                existingElements.append("- ").append(child.getName())
+                        .append(child.isDirectory() ? " [DIR]\n" : " [ARCHIVO]\n");
+            }
+        }
+
         JTextField nameField = new JTextField();
 
         Object[] message = {
-            "Nombre del Elemento (Archivo/Directorio):", nameField,
-            "Ruta Padre (donde se encuentra):", pathField
+            existingElements.toString(),
+            "Nombre del elemento a eliminar (solo en /root):",
+            nameField
         };
 
         int option = JOptionPane.showConfirmDialog(this, message,
-                "Eliminar Elemento (¡Advertencia!)", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+                "Eliminar Elemento", JOptionPane.OK_CANCEL_OPTION);
 
         if (option == JOptionPane.OK_OPTION) {
-            String path = pathField.getText().trim();
             String name = nameField.getText().trim();
 
-            if (name.isEmpty() || path.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Debe especificar la ruta y el nombre.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
+            System.out.println("DEBUG - Eliminar: /root/" + name);
 
-            // Intentar encontrar el elemento completo
-            // Nota: findElement necesita la RUTA COMPLETA, por eso concatenamos.
-            FileSystemElement elementToDelete = fileSystem.findElement(path + "/" + name);
+            // Buscar el elemento
+            FileSystemElement element = fileSystem.findElement("/root/" + name);
+            System.out.println("DEBUG - Elemento encontrado: " + (element != null));
 
-            if (elementToDelete == null) {
-                JOptionPane.showMessageDialog(this, "Elemento no encontrado en esa ruta o sin permisos de lectura.", "Error", JOptionPane.ERROR_MESSAGE);
+            if (element == null) {
+                JOptionPane.showMessageDialog(this,
+                        "Elemento '" + name + "' no encontrado en /root\n"
+                        + existingElements.toString(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
             boolean success = false;
 
-            // Llamar a la función de eliminación adecuada en FileSystemManager
-            if (elementToDelete.isDirectory()) {
-                success = fileSystem.deleteDirectory(path, name);
+            if (element.isDirectory()) {
+                success = fileSystem.deleteDirectory("/root", name);
+                System.out.println("DEBUG - Resultado eliminar directorio: " + success);
             } else {
-                success = fileSystem.deleteFile(path, name);
+                success = fileSystem.deleteFile("/root", name);
+                System.out.println("DEBUG - Resultado eliminar archivo: " + success);
             }
 
-            // Mostrar resultado y actualizar UI
             if (success) {
-                JOptionPane.showMessageDialog(this, name + " eliminado exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
-                updateDisplay(); // Refrescar el árbol de archivos
+                JOptionPane.showMessageDialog(this,
+                        "Elemento '" + name + "' eliminado exitosamente");
+                updateDisplay();
             } else {
-                JOptionPane.showMessageDialog(this, "Error al eliminar. Verifique si el directorio es /root, permisos (debe ser dueño o Admin), o si el directorio padre existe.",
+                JOptionPane.showMessageDialog(this,
+                        "Error al eliminar '" + name + "'\n"
+                        + "Si es directorio, verifique que esté vacío",
                         "Error", JOptionPane.ERROR_MESSAGE);
             }
+        }
+    }
+
+    private void setupTreeSelectionListener() {
+        fileTree.addTreeSelectionListener(e -> {
+            TreePath selectedPath = fileTree.getSelectionPath();
+            if (selectedPath != null) {
+                String fullPath = buildPathFromTreePath(selectedPath);
+                System.out.println("Elemento seleccionado: " + fullPath);
+
+                // Opcional: mostrar información del elemento seleccionado
+                FileSystemElement element = fileSystem.findElement(fullPath);
+                if (element != null) {
+                    statusLabel.setText("Seleccionado: " + element.getName()
+                            + (element.isDirectory() ? " (Directorio)" : " (Archivo)"));
+                }
+            }
+        });
+    }
+
+    private String buildPathFromTreePath(TreePath path) {
+        if (path == null) {
+            return "";
+        }
+
+        StringBuilder fullPath = new StringBuilder();
+        Object[] components = path.getPath();
+
+        for (Object component : components) {
+            if (fullPath.length() > 0) {
+                fullPath.append("/");
+            }
+            fullPath.append(component.toString());
+        }
+
+        return fullPath.toString();
+    }
+
+    
+    private String getValidParentPath(String desiredPath) {
+        // Si la ruta deseada funciona, usarla
+        Directory dir = fileSystem.findDirectory(desiredPath);
+        if (dir != null) {
+            System.out.println("DEBUG - Ruta válida: " + desiredPath);
+            return desiredPath;
+        }
+
+        // Si no funciona, probar alternativas
+        System.out.println("DEBUG - Ruta '" + desiredPath + "' no válida, probando alternativas...");
+
+        // Alternativa 1: Solo usar /root
+        if (!desiredPath.equals("/root")) {
+            System.out.println("DEBUG - Alternativa 1: /root");
+            return "/root";
+        }
+
+        return "/root"; // Último recurso
+    }
+    
+    private void debugTreeStructure() {
+        System.out.println("=== DEBUG TREE STRUCTURE ===");
+        DefaultTreeModel model = (DefaultTreeModel) fileTree.getModel();
+        DefaultMutableTreeNode root = (DefaultMutableTreeNode) model.getRoot();
+
+        printTreeNodes(root, 0);
+        System.out.println("============================");
+    }
+
+    private void printTreeNodes(DefaultMutableTreeNode node, int depth) {
+        String indent = "  ".repeat(depth);
+        String nodeType = (node.getChildCount() > 0) ? "DIRECTORIO" : "ARCHIVO";
+        System.out.println(indent + "- " + node + " (" + nodeType + ")");
+
+        // Recorrer hijos
+        for (int i = 0; i < node.getChildCount(); i++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
+            printTreeNodes(child, depth + 1);
         }
     }
 }

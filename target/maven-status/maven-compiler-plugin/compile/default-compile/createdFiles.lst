@@ -6,6 +6,7 @@ DataStructures\LinkedList$LinkedListIterator.class
 LogicalStrucures\Permissions.class
 DataStructures\Block.class
 UIComponents\FileTreePanel.class
+UIComponents\MainFrame$1.class
 Testing\DiskSchedulerTest.class
 Managers\FileSystemManager$FileEntry.class
 Schedulers\SSTFScheduler.class
