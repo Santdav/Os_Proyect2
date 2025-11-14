@@ -81,7 +81,7 @@ public class MainFrame extends JFrame {
         tableScrollPane.setBorder(BorderFactory.createTitledBorder("Tabla de Asignación de Archivos"));
 
         // Panel de disco (simplificado por ahora)
-        diskPanel = new JPanel();
+        diskPanel = new DiskPanel(fileSystem.getDisk());
         diskPanel.setBorder(BorderFactory.createTitledBorder("Simulación de Disco"));
         diskPanel.setLayout(new BorderLayout());
         diskPanel.add(new JLabel("Visualización de bloques del disco - En desarrollo", JLabel.CENTER), BorderLayout.CENTER);
@@ -278,10 +278,14 @@ public class MainFrame extends JFrame {
         // Actualizar la tabla de asignación
         allocationTable.setModel(createAllocationTableModel());
 
+        // Actualizar visualización del disco
+        if (diskPanel instanceof DiskPanel) {
+            ((DiskPanel) diskPanel).updateDisplay();
+        }
+
         // Actualizar barra de estado
         updateStatusBar();
-        debugTreeStructure();
-        // TODO: Actualizar visualización del disco y procesos
+
         repaint();
     }
 

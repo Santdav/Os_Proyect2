@@ -1,11 +1,12 @@
 DataStructures\Queue.class
 Schedulers\SCANScheduler.class
 LogicalStrucures\Process.class
+UIComponents\DiskPanel.class
 LogicalStrucures\File.class
 DataStructures\LinkedList$LinkedListIterator.class
 LogicalStrucures\Permissions.class
 DataStructures\Block.class
-UIComponents\FileTreePanel.class
+UIComponents\DiskPanel$1.class
 UIComponents\MainFrame$1.class
 Testing\DiskSchedulerTest.class
 Managers\FileSystemManager$FileEntry.class
