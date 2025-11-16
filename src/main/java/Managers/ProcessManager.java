@@ -314,32 +314,37 @@ public class ProcessManager {
     public DiskScheduler getDiskScheduler() {
         return diskScheduler;
     }
-    
+
     public String getManagerStatus() {
         return String.format(
-            "Procesos: %d Listos, %d Bloqueados, %d Terminados | Solicitudes E/S: %d Pendientes",
-            readyQueue.size(), blockedQueue.size(), terminatedProcesses.size(), ioRequestQueue.size()
+                "Procesos: %d Listos, %d Bloqueados, %d Terminados | Solicitudes E/S: %d Pendientes",
+                readyQueue.size(), blockedQueue.size(), terminatedProcesses.size(), ioRequestQueue.size()
         );
     }
-    
+
     /**
      * Método de conveniencia para crear procesos desde la GUI
      */
     public Process createFileProcess(String filePath, String fileName, int fileSize) {
         String owner = fileSystem.getCurrentUser();
-        return createProcess(owner, Process.IOOperation.CREATE_FILE, filePath, fileName, fileSize);
+        Process process = createProcess(owner, Process.IOOperation.CREATE_FILE, filePath, fileName, fileSize);
+
+        // ✅ IMPORTANTE: NO llamar a submitIORequest aquí
+        // Solo crea el proceso y déjalo en estado READY
+        // El submitIORequest lo hará la GUI cuando el usuario confirme
+        return process;
     }
-    
+
     public Process createReadProcess(String filePath, String fileName) {
         String owner = fileSystem.getCurrentUser();
         return createProcess(owner, Process.IOOperation.READ_FILE, filePath, fileName, 0);
     }
-    
+
     public Process createDeleteFileProcess(String filePath, String fileName) {
         String owner = fileSystem.getCurrentUser();
         return createProcess(owner, Process.IOOperation.DELETE_FILE, filePath, fileName, 0);
     }
-    
+
     public Process createDirectoryProcess(String dirPath, String dirName) {
         String owner = fileSystem.getCurrentUser();
         return createProcess(owner, Process.IOOperation.CREATE_DIR, dirPath, dirName);

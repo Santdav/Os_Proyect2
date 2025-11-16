@@ -18,6 +18,7 @@ import LogicalStrucures.Directory;
 import Managers.FileSystemManager;
 import Managers.ProcessManager;
 import Schedulers.*;
+import LogicalStrucures.Process;
 /**
  * Ventana principal del sistema de archivos - Versión integrable Diseñada para
  * ser instanciada desde tu main principal existente
@@ -61,6 +62,7 @@ public class MainFrame extends JFrame {
         setupLayout();
         setupEventHandlers();
         updateDisplay();
+        startIOProcessing();
 
         setTitle("Sistema de Archivos - Simulador");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -212,18 +214,27 @@ public class MainFrame extends JFrame {
 
         JButton createFileBtn = findButton("Crear Archivo");
         if (createFileBtn != null) {
-            createFileBtn.addActionListener(e -> showCreateFileDialog()); // Llama al método existente
+            createFileBtn.addActionListener(e -> {
+                // En lugar de llamar DIRECTAMENTE a fileSystem:
+                // showCreateFileDialog(); // ❌ VIEJO
+
+                // Crear un PROCESO para la operación:
+                showCreateFileProcessDialog(); // ✅ NUEVO
+            });
         }
 
         JButton createDirBtn = findButton("Crear Directorio");
         if (createDirBtn != null) {
-            // Llama al nuevo método de diálogo que acabamos de añadir
-            createDirBtn.addActionListener(e -> showCreateDirDialog());
+            createDirBtn.addActionListener(e -> {
+                showCreateDirectoryProcessDialog(); // ✅ NUEVO
+            });
         }
 
-        JButton deleteBtn = findButton("Eliminar"); // Usa tu método findButton(String text)
+        JButton deleteBtn = findButton("Eliminar");
         if (deleteBtn != null) {
-            deleteBtn.addActionListener(e -> showDeleteElementDialog());
+            deleteBtn.addActionListener(e -> {
+                showDeleteProcessDialog(); // ✅ NUEVO
+            });
         }
 
     }
@@ -485,15 +496,6 @@ public class MainFrame extends JFrame {
         });
     }
     
-    private void startAutoUpdate() {
-        // Actualizar cada 2 segundos automáticamente
-        updateTimer = new Timer(2000, e -> updateDisplay());
-        updateTimer.start();
-    }
-
-    /**
-     *
-     */
     public void showDeleteElementDialog() {
         // Obtener la selección actual del árbol para pre-llenar
         String defaultPath = getSelectedTreePath();
@@ -672,7 +674,9 @@ public class MainFrame extends JFrame {
             Object[] pathComponents = selectionPath.getPath();
 
             for (int i = 0; i < pathComponents.length; i++) {
-                if (path.length() > 0) path.append("/");
+                if (path.length() > 0) {
+                    path.append("/");
+                }
                 path.append(pathComponents[i].toString());
             }
 
@@ -680,6 +684,127 @@ public class MainFrame extends JFrame {
         }
 
         return "/root"; // Ruta por defecto
+    }
+
+    private void startIOProcessing() {
+        Timer ioProcessor = new Timer(2000, e -> { // Cada 2 segundo
+            processManager.processNextIORequest();
+            updateDisplay(); // Actualizar UI después de procesar
+        });
+        ioProcessor.start();
+    }
+
+    private void showCreateFileProcessDialog() {
+        JTextField nameField = new JTextField();
+        JTextField sizeField = new JTextField("1");
+        JTextField pathField = new JTextField("/root");
+
+        Object[] message = {
+            "Nombre del archivo:", nameField,
+            "Tamaño en bloques:", sizeField,
+            "Ruta del directorio padre:", pathField
+        };
+
+        int option = JOptionPane.showConfirmDialog(this, message,
+                "Crear Archivo (Proceso)", JOptionPane.OK_CANCEL_OPTION);
+
+        if (option == JOptionPane.OK_OPTION) {
+            try {
+                String name = nameField.getText().trim();
+                int size = Integer.parseInt(sizeField.getText().trim());
+                String path = pathField.getText().trim();
+
+                // ✅ SOLO crear el proceso
+                Process process = processManager.createFileProcess(path, name, size);
+
+                // ✅ ENCOLAR manualmente aquí
+                processManager.submitIORequest(process);
+
+                JOptionPane.showMessageDialog(this,
+                        "Proceso creado para archivo '" + name + "'\n"
+                        + "ID: " + process.getProcessId() + "\n"
+                        + "Estado: " + process.getState() + "\n"
+                        + "⏳ En cola de E/S - Será procesado por: " + processManager.getDiskScheduler().getAlgorithmName(),
+                        "Proceso en Cola", JOptionPane.INFORMATION_MESSAGE);
+
+                updateDisplay(); // Solo actualiza para mostrar el proceso en cola
+
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "El tamaño debe ser un número válido",
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void showCreateDirectoryProcessDialog() {
+        JTextField nameField = new JTextField();
+        JTextField pathField = new JTextField("/root");
+
+        Object[] message = {
+            "Nombre del Directorio:", nameField,
+            "Ruta Padre:", pathField
+        };
+
+        int option = JOptionPane.showConfirmDialog(this, message,
+                "Crear Directorio (Proceso)", JOptionPane.OK_CANCEL_OPTION);
+
+        if (option == JOptionPane.OK_OPTION) {
+            String name = nameField.getText().trim();
+            String path = pathField.getText().trim();
+
+            // ✅ CREAR PROCESO para directorio
+            Process process = processManager.createDirectoryProcess(path, name);
+            processManager.submitIORequest(process);
+
+            JOptionPane.showMessageDialog(this,
+                    "Proceso creado para directorio '" + name + "'\n"
+                    + "ID: " + process.getProcessId() + "\n"
+                    + // Corregido: getProcessId()
+                    "Estado: " + process.getState(), // Corregido: usa EXIT
+                    "Proceso Creado", JOptionPane.INFORMATION_MESSAGE);
+
+            updateDisplay();
+        }
+    }
+
+    private void showDeleteProcessDialog() {
+        String selectedPath = getSelectedTreePath();
+        JTextField pathField = new JTextField(selectedPath);
+
+        Object[] message = {
+            "Ruta COMPLETA del elemento a eliminar:",
+            pathField
+        };
+
+        int option = JOptionPane.showConfirmDialog(this, message,
+                "Eliminar Elemento (Proceso)", JOptionPane.OK_CANCEL_OPTION);
+
+        if (option == JOptionPane.OK_OPTION) {
+            String fullPath = pathField.getText().trim();
+
+            // Extraer path y nombre
+            int lastSlash = fullPath.lastIndexOf("/");
+            if (lastSlash == -1) {
+                JOptionPane.showMessageDialog(this, "Ruta inválida");
+                return;
+            }
+
+            String parentPath = fullPath.substring(0, lastSlash);
+            String elementName = fullPath.substring(lastSlash + 1);
+
+            // ✅ CREAR PROCESO de eliminación
+            Process process = processManager.createDeleteFileProcess(parentPath, elementName);
+            processManager.submitIORequest(process);
+
+            JOptionPane.showMessageDialog(this,
+                    "Proceso creado para eliminar '" + elementName + "'\n"
+                    + "ID: " + process.getProcessId() + "\n"
+                    + // Corregido: getProcessId()
+                    "Estado: " + process.getState(), // Corregido: usa EXIT
+                    "Proceso Creado", JOptionPane.INFORMATION_MESSAGE);
+
+            updateDisplay();
+        }
     }
 
 }
