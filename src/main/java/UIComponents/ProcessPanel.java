@@ -51,7 +51,7 @@ public class ProcessPanel extends JPanel {
         // Botones
         createProcessBtn = new JButton("Crear Proceso");
         processNextBtn = new JButton("Procesar Siguiente E/S");
-        clearCompletedBtn = new JButton("Limpiar Completados");
+        clearCompletedBtn = new JButton("Contar Completados");
         
         // Etiqueta de estadísticas
         statsLabel = new JLabel("", JLabel.CENTER);
@@ -147,9 +147,23 @@ public class ProcessPanel extends JPanel {
                 String name = nameField.getText().trim();
                 int size = Integer.parseInt(sizeField.getText().trim());
                 
-                if (!name.isEmpty()) {
+                
+                if (name.isEmpty()) {
+                JOptionPane.showMessageDialog(this,
+                                "No se puede crear un proceso con nombre vacio.",
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                                return;
+                }
+                else {
                     Process process = processManager.createFileProcess(path, name, size);
                     processManager.submitIORequest(process);
+                    if (size > this.processManager.getFileSystem().getDisk().getFreeBlocks()) {
+                        JOptionPane.showMessageDialog(this,
+                                "Tamaño excede la cantidad de bloques disponibles. Bloques disponibles: "
+                                + this.processManager.getFileSystem().getDisk().getFreeBlocks(),
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                        }
                     dialog.dispose();
                     updateDisplay();
                     JOptionPane.showMessageDialog(this, 
@@ -229,8 +243,6 @@ public class ProcessPanel extends JPanel {
     }
     
     private void clearCompletedProcesses() {
-        // Los procesos terminados ya están gestionados por ProcessManager
-        // Este método es principalmente para limpiar la visualización
         JOptionPane.showMessageDialog(this, 
             "Procesos completados: " + processManager.getTerminatedProcessesCount(),
             "Estadísticas", JOptionPane.INFORMATION_MESSAGE);

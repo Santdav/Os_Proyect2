@@ -34,7 +34,8 @@ public class Os_Proyect2 {
         }
         
         // Crear el sistema de archivos
-        FileSystemManager fileSystem = new FileSystemManager(256); // 100 bloques
+        int SystemBlocks = 256;
+        FileSystemManager fileSystem = new FileSystemManager(SystemBlocks); // 256 bloques
         
         // Ejecutar en el Event Dispatch Thread (requerido para Swing)
         SwingUtilities.invokeLater(() -> {
@@ -46,7 +47,7 @@ public class Os_Proyect2 {
             JOptionPane.showMessageDialog(mainFrame,
                 "Sistema de Archivos - Simulador\n\n" +
                 "Modo: Administrador\n" +
-                "Disco: 256 bloques disponibles\n" +
+                "Disco: " + SystemBlocks + " bloques disponibles\n" +
                 "Estado: Listo para operaciones",
                 "Bienvenido",
                 JOptionPane.INFORMATION_MESSAGE);
