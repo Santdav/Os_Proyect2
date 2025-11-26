@@ -83,13 +83,12 @@ public class MainFrame extends JFrame {
         JScrollPane tableScrollPane = new JScrollPane(allocationTable);
         tableScrollPane.setBorder(BorderFactory.createTitledBorder("Tabla de Asignación de Archivos"));
 
-        // ✅ Panel de disco MEJORADO - Ahora es funcional
+        // Panel de disco
         diskPanel = new DiskPanel(fileSystem.getDisk());
 
-        // ✅ Panel de procesos MEJORADO - Ahora es funcional
+        // Panel de procesos
         processPanel = new ProcessPanel( processManager); // Necesitarás crear ProcessManager
 
-        // Si no tienes ProcessManager aún, usa esta versión temporal:
         if (processManager == null) {
             processPanel = createTemporaryProcessPanel();
         }
@@ -206,7 +205,6 @@ public class MainFrame extends JFrame {
             updateDisplay();
         });
 
-        // Listeners para los botones (implementación básica)
         JButton refreshBtn = findButton("Actualizar");
         if (refreshBtn != null) {
             refreshBtn.addActionListener(e -> updateDisplay());
@@ -215,25 +213,21 @@ public class MainFrame extends JFrame {
         JButton createFileBtn = findButton("Crear Archivo");
         if (createFileBtn != null) {
             createFileBtn.addActionListener(e -> {
-                // En lugar de llamar DIRECTAMENTE a fileSystem:
-                // showCreateFileDialog(); // ❌ VIEJO
-
-                // Crear un PROCESO para la operación:
-                showCreateFileProcessDialog(); // ✅ NUEVO
+                showCreateFileProcessDialog();
             });
         }
 
         JButton createDirBtn = findButton("Crear Directorio");
         if (createDirBtn != null) {
             createDirBtn.addActionListener(e -> {
-                showCreateDirectoryProcessDialog(); // ✅ NUEVO
+                showCreateDirectoryProcessDialog();
             });
         }
 
         JButton deleteBtn = findButton("Eliminar");
         if (deleteBtn != null) {
             deleteBtn.addActionListener(e -> {
-                showDeleteProcessDialog(); // ✅ NUEVO
+                showDeleteProcessDialog(); // NUEVO
             });
         }
 
@@ -257,19 +251,14 @@ public class MainFrame extends JFrame {
 
         DefaultMutableTreeNode node = new DefaultMutableTreeNode(element.getName());
 
-        // VERIFICAR DIRECTAMENTE si es directorio usando el elemento real
         if (element.isDirectory()) {
             Directory dir = (Directory) element;
             LinkedList<FileSystemElement> children = dir.getChildren();
-
-            // Si es directorio, procesar hijos (aunque esté vacío)
             for (int i = 0; i < children.size(); i++) {
                 FileSystemElement child = children.get(i);
                 node.add(buildTreeModel(child));
             }
 
-            // **AGREGAR ESTO: Si el directorio está vacío, agregar un nodo temporal**
-            // para que no aparezca como "leaf" en el árbol
             if (children.isEmpty()) {
                 node.add(new DefaultMutableTreeNode("")); // Nodo vacío temporal
             }
@@ -713,11 +702,22 @@ public class MainFrame extends JFrame {
                 String name = nameField.getText().trim();
                 int size = Integer.parseInt(sizeField.getText().trim());
                 String path = pathField.getText().trim();
-
-                // ✅ SOLO crear el proceso
+                    if (name.isEmpty()) {
+                    JOptionPane.showMessageDialog(this,
+                            "No se puede crear un archivo con nombre vacio.",
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                    } else {
+                    // Validar que el tamaño no exceda los bloques disponibles
+                    if (size > this.fileSystem.getDisk().getFreeBlocks()) {
+                        JOptionPane.showMessageDialog(this,
+                                "Tamaño excede la cantidad de bloques disponibles. Bloques disponibles: "
+                                + this.fileSystem.getDisk().getFreeBlocks(),
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                }
                 Process process = processManager.createFileProcess(path, name, size);
-
-                // ✅ ENCOLAR manualmente aquí
                 processManager.submitIORequest(process);
 
                 JOptionPane.showMessageDialog(this,
@@ -752,7 +752,13 @@ public class MainFrame extends JFrame {
             String name = nameField.getText().trim();
             String path = pathField.getText().trim();
 
-            // ✅ CREAR PROCESO para directorio
+            if (name.isEmpty()) {
+                JOptionPane.showMessageDialog(this,
+                                "No se puede crear un directorio con nombre vacio.",
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                                return;
+            }
+            
             Process process = processManager.createDirectoryProcess(path, name);
             processManager.submitIORequest(process);
 

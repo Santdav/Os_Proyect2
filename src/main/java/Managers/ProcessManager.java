@@ -315,6 +315,10 @@ public class ProcessManager {
         return diskScheduler;
     }
 
+    public FileSystemManager getFileSystem() {
+        return fileSystem;
+    }
+
     public String getManagerStatus() {
         return String.format(
                 "Procesos: %d Listos, %d Bloqueados, %d Terminados | Solicitudes E/S: %d Pendientes",

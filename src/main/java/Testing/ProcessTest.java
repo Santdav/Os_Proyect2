@@ -36,7 +36,7 @@ public class ProcessTest {
         System.out.println("   - Propietario correcto: " + 
                           fileProcess.getOwner().equals("admin"));
         
-        System.out.println("   ✅ Prueba de creación completada\n");
+        System.out.println("Prueba de creación completada\n");
     }
     
     public static void testProcessStates() {
@@ -66,7 +66,7 @@ public class ProcessTest {
         System.out.println("   - isFinished(): " + process.isFinished());
         System.out.println("   - canExecute(): " + process.canExecute());
         
-        System.out.println("   ✅ Prueba de estados completada\n");
+        System.out.println("Prueba de estados completada\n");
     }
     
     public static void testProcessOperations() {
@@ -90,7 +90,7 @@ public class ProcessTest {
         System.out.println("   - Operación exitosa: " + process.isOperationSuccess());
         System.out.println("   - Sin mensaje error: " + process.getErrorMessage().isEmpty());
         
-        System.out.println("   ✅ Prueba de operaciones completada\n");
+        System.out.println("Prueba de operaciones completada\n");
     }
     
     public static void testProcessTiming() {
@@ -125,6 +125,6 @@ public class ProcessTest {
         process.setState(Process.ProcessState.EXIT);
         System.out.println("   - Tiempo fin establecido: " + (process.getEndTime() > 0));
         
-        System.out.println("   ✅ Prueba de tiempos completada\n");
+        System.out.println("Prueba de tiempos completada\n");
     }
 }
