@@ -50,6 +50,7 @@ public class Os_Proyect2 {
                 "Estado: Listo para operaciones",
                 "Bienvenido",
                 JOptionPane.INFORMATION_MESSAGE);
+                //exx
         });
     }
 }
