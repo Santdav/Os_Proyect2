@@ -387,10 +387,10 @@ public class MainFrame extends JFrame {
         JTextField pathField = new JTextField(defaultPath);
 
         // Mensaje más informativo
-        JLabel helpLabel = new JLabel("<html>Ejemplos de rutas válidas:<br>" +
-                                     "- /root (directorio raíz)<br>" +
-                                     "- /root/home<br>" +
-                                     "- /root/home/user</html>");
+        JLabel helpLabel = new JLabel("<html>Ejemplos de rutas válidas:<br>"
+                + "- /root (directorio raíz)<br>"
+                + "- /root/home<br>"
+                + "- /root/home/user</html>");
 
         Object[] message = {
             "Nombre del archivo:", nameField,
@@ -399,23 +399,37 @@ public class MainFrame extends JFrame {
             helpLabel
         };
 
-        int option = JOptionPane.showConfirmDialog(this, message, 
-            "Crear Archivo", JOptionPane.OK_CANCEL_OPTION);
+        int option = JOptionPane.showConfirmDialog(this, message,
+                "Crear Archivo", JOptionPane.OK_CANCEL_OPTION);
 
         if (option == JOptionPane.OK_OPTION) {
             try {
                 String name = nameField.getText().trim();
                 int size = Integer.parseInt(sizeField.getText().trim());
                 String path = pathField.getText().trim();
-
+                if (name.isEmpty()) {
+                    JOptionPane.showMessageDialog(this,
+                            "No se puede crear un archivo con nombre vacio.",
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                } else {
+                    // Validar que el tamaño no exceda los bloques disponibles
+                    if (size > this.fileSystem.getDisk().getFreeBlocks()) {
+                        JOptionPane.showMessageDialog(this,
+                                "Tamaño excede la cantidad de bloques disponibles. Bloques disponibles: "
+                                + this.fileSystem.getDisk().getFreeBlocks(),
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                }
                 System.out.println("DEBUG - Intentando crear archivo: '" + name + "' en '" + path + "'");
 
                 boolean success = fileSystem.createFile(path, name, size);
 
                 if (success) {
-                    JOptionPane.showMessageDialog(this, 
-                        "Archivo '" + name + "' creado exitosamente en " + path,
-                        "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(this,
+                            "Archivo '" + name + "' creado exitosamente en " + path,
+                            "Éxito", JOptionPane.INFORMATION_MESSAGE);
                     updateDisplay();
                 } else {
                     JOptionPane.showMessageDialog(this, 
@@ -759,6 +773,12 @@ public class MainFrame extends JFrame {
                                 return;
             }
             
+            if (name.isEmpty()) {
+                JOptionPane.showMessageDialog(this,
+                                "No se puede crear un directorio con nombre vacio.",
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                                return;
+            }
             Process process = processManager.createDirectoryProcess(path, name);
             processManager.submitIORequest(process);
 

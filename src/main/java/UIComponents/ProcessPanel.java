@@ -159,10 +159,22 @@ public class ProcessPanel extends JPanel {
                 String path = pathField.getText().trim();
                 String name = nameField.getText().trim();
                 int size = Integer.parseInt(sizeField.getText().trim());
-
-                if (!name.isEmpty()) {
+                 if (name.isEmpty()) {
+                JOptionPane.showMessageDialog(this,
+                                "No se puede crear un proceso con nombre vacio.",
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                                return;
+                }
+                else {
                     Process process = processManager.createFileProcess(path, name, size);
                     processManager.submitIORequest(process);
+                    if (size > this.processManager.getFileSystem().getDisk().getFreeBlocks()) {
+                        JOptionPane.showMessageDialog(this,
+                                "Tamaño excede la cantidad de bloques disponibles. Bloques disponibles: "
+                                + this.processManager.getFileSystem().getDisk().getFreeBlocks(),
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                        }
                     dialog.dispose();
                     updateDisplay();
                     JOptionPane.showMessageDialog(this,
